@@ -8,7 +8,8 @@ import           Snap.Http.Server
 
 import qualified Data.ByteString.Char8 as BS
 
-import Utils.Http
+import           Utils.Http
+import           Users
 
 version :: String
 version = "1.0"
