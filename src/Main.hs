@@ -27,7 +27,7 @@ site =
           , ("status", getStatus)
           , ("echo/:echoparam", echoHandler)
           , ("ping/:countparam", pingHandler)
-          , ("users/user/:id", userHandler)
+          , ("users/user/:id", getUserHandler)
           ] <|>
     dir "static" (serveDirectory ".")
 
@@ -47,5 +47,5 @@ pingHandler = do
     count <- getIntParamDef "countparam" 10
     writeBS $ BS.pack $ replicate count '*'
 
-userHandler :: Snap ()
-userHandler = jsonGet $ getUserById
+getUserHandler :: Snap ()
+getUserHandler = jsonGetId $ getUserById

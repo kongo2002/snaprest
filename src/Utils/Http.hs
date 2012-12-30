@@ -63,12 +63,16 @@ rqIntListParam :: BS.ByteString -> Request -> [Int]
 rqIntListParam bs rq =
     mapMaybe readIntMaybe (rqListParam bs rq)
 
+setToJson :: Response -> Response
+setToJson = setContentType $ BS.pack "application/json"
+
 writeErrorResponse :: Int -> String -> Snap ()
 writeErrorResponse code message = do
-    modifyResponse $ setResponseStatus code $ BS.pack message
+    modifyResponse $ setResponseCode code
+    writeBS $ BS.pack message
 
 notFoundMsg :: String -> Snap ()
 notFoundMsg message = writeErrorResponse 404 message
 
 notFound :: Snap ()
-notFound = notFoundMsg "NotFound"
+notFound = notFoundMsg "Not found"
