@@ -3,6 +3,7 @@
 module Main where
 
 import           Control.Applicative ((<|>))
+import           Control.Monad.IO.Class (liftIO)
 
 import           Snap.Core
 import           Snap.Util.FileServe
@@ -28,6 +29,7 @@ site =
           , ("echo/:echoparam", echoHandler)
           , ("ping/:countparam", pingHandler)
           , ("users/user/:id", getUserHandler)
+          , ("users/user", postUserHandler)
           ] <|>
     dir "static" (serveDirectory ".")
 
@@ -49,3 +51,7 @@ pingHandler = do
 
 getUserHandler :: Snap ()
 getUserHandler = jsonGetId $ getUserById
+
+postUserHandler = method POST $ do
+    user <- readBodyJson :: Snap User
+    liftIO $ putStrLn $ "New user " ++ (show user)

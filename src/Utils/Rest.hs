@@ -4,11 +4,14 @@ module Utils.Rest where
 
 import           Prelude hiding (id, elem)
 import           Data.Data
+import           Data.Maybe (fromJust)
 import qualified Data.Aeson.Generic as JSON
 import qualified Data.ByteString.Char8 as BS
 import           Snap.Core
 
 import           Utils.Http
+
+maximumBodyLength = 100000
 
 getSomeInt :: BS.ByteString -> (Int -> Snap ()) -> Snap ()
 getSomeInt name func = method GET $ do
@@ -38,3 +41,6 @@ jsonGetId func = getSomeIntId $ \id -> do
         modifyResponse $ setToJson
         writeLBS $ JSON.encode $ elem
       Nothing   -> notFound
+
+readBodyJson :: MonadSnap m => Data d => m d
+readBodyJson = readRequestBody maximumBodyLength >>= return . fromJust . JSON.decode'
