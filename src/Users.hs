@@ -7,11 +7,12 @@ module Users
     , MongoType
     , getUserByKey
     , getUserById
+    , postUser
     ) where
 
 import Prelude hiding (id, lookup)
 import Control.Applicative ((<$>), (<*>))
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 
 import Data.Bson
 import Data.Data
@@ -41,13 +42,20 @@ userDb = "test"
 userCollection :: Text
 userCollection = "Users"
 
-getUserByKey :: (MonadIO m) => String -> m (Maybe User)
+getUserByKey :: MonadIO m => String -> m (Maybe User)
 getUserByKey key =
     let query = select ["_id" =: (read key :: ObjectId)] userCollection
     in  mongoFindOne userDb query
 
-getUserById :: (MonadIO m) => Int -> m (Maybe User)
+getUserById :: MonadIO m => Int -> m (Maybe User)
 getUserById id =
     mongoFindOne userDb query
     where
       query = select ["id" =: id] userCollection
+
+postUser :: MonadIO m => User -> m String
+postUser user = do
+    liftIO $ putStrLn $ "Insert new user: " ++ (show user)
+    liftIO $ mongoInsert userDb userCollection user
+
+

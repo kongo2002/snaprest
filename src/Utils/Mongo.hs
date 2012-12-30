@@ -2,8 +2,11 @@ module Utils.Mongo
     (
       MongoType(..)
     , mongoFindOne
+    , mongoInsert
     ) where
 
+import Prelude hiding (id, elem)
+import Control.Applicative
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 
@@ -26,3 +29,17 @@ mongoFindOne :: MonadIO m => MongoType t => Database -> Query -> m (Maybe t)
 mongoFindOne db query = do
     doc <- exec db $ findOne query
     return (doc >>= (fromDoc >=> Just))
+
+mongoInsert :: Applicative m => MonadIO m => MongoType a => Database -> Collection -> a -> m String
+mongoInsert db col elem = do
+    result <- exec db $ insert col $ toDoc elem
+    case result of
+      ObjId id -> return $ show id
+      _        -> fail "unexpected id"
+
+mongoInsertIntId :: Applicative m => MonadIO m => MongoType a => Database -> Collection -> a -> m String
+mongoInsertIntId db col elem = do
+    result <- exec db $ insert col $ toDoc elem
+    case result of
+      Int32 id -> return $ show id
+      _        -> fail "unexpected id"

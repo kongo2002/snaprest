@@ -10,6 +10,7 @@ import           Snap.Util.FileServe
 import           Snap.Http.Server
 
 import qualified Data.ByteString.Char8 as BS
+import           Data.Aeson.Generic as JSON
 
 import           Users
 import           Utils.Http
@@ -54,7 +55,6 @@ getUserHandler = jsonGetId $ getUserById
 
 postUserHandler :: Snap ()
 postUserHandler =
-    jsonPost $ handleUser
-    where
-      handleUser u =
-        liftIO $ putStrLn $ "New user " ++ (show (u :: User))
+    jsonPost $ \user -> do
+        id <- postUser user
+        writeLBS $ JSON.encode id
