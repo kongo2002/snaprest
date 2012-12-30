@@ -52,6 +52,9 @@ pingHandler = do
 getUserHandler :: Snap ()
 getUserHandler = jsonGetId $ getUserById
 
-postUserHandler = method POST $ do
-    user <- readBodyJson :: Snap User
-    liftIO $ putStrLn $ "New user " ++ (show user)
+postUserHandler :: Snap ()
+postUserHandler =
+    jsonPost $ handleUser
+    where
+      handleUser u =
+        liftIO $ putStrLn $ "New user " ++ (show (u :: User))

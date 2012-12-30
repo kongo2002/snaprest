@@ -76,3 +76,9 @@ notFoundMsg message = writeErrorResponse 404 message
 
 notFound :: Snap ()
 notFound = notFoundMsg "Not found"
+
+invalidMsg :: String -> Snap ()
+invalidMsg = writeErrorResponse 500
+
+invalidInput :: Snap ()
+invalidInput = invalidMsg "Invalid input given"
