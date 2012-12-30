@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module Users
+module Types.Users
     (
       User(..)
     , MongoType
@@ -16,25 +16,32 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 
 import Data.Bson
 import Data.Data
-import Data.Text
+import Data.Text hiding (map)
 import Database.MongoDB
 
+import Types.CommDetail
 import Utils.Mongo
 
-data User = User {
-    userId :: Int,
-    fname :: String,
-    lname :: String } deriving (Data, Typeable, Show, Eq)
+data User = User
+    {
+      id :: Int
+    , firstName :: String
+    , lastName :: String
+    , commDetails :: [CommDetail]
+    } deriving (Data, Typeable, Show, Eq)
 
 instance MongoType User where
     toDoc x = [
-        "id" =: userId x,
-        "fname" =: fname x,
-        "lname" =: lname x ]
+        "id" =: id x,
+        "fname" =: firstName x,
+        "lname" =: lastName x,
+        "cdetails" =: map toDoc (commDetails x)
+        ]
     fromDoc d = User
         <$> lookup "id" d
         <*> lookup "fname" d
         <*> lookup "lname" d
+        <*> (mapM fromDoc =<< lookup "cdetails" d)
 
 userDb :: Text
 userDb = "test"
@@ -57,5 +64,3 @@ postUser :: MonadIO m => User -> m String
 postUser user = do
     liftIO $ putStrLn $ "Insert new user: " ++ (show user)
     liftIO $ mongoInsert userDb userCollection user
-
-

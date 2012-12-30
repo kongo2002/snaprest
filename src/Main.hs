@@ -12,7 +12,7 @@ import           Snap.Http.Server
 import qualified Data.ByteString.Char8 as BS
 import           Data.Aeson.Generic as JSON
 
-import           Users
+import           Types.Users
 import           Utils.Http
 import           Utils.Rest
 
