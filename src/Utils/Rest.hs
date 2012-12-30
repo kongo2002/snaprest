@@ -1,6 +1,8 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Utils.Rest where
 
-import           Prelude hiding (id)
+import           Prelude hiding (id, elem)
 import           Data.Data
 import qualified Data.Aeson.Generic as JSON
 import qualified Data.ByteString.Char8 as BS

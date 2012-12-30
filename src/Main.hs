@@ -3,7 +3,6 @@
 module Main where
 
 import           Control.Applicative ((<|>))
-import           Data.Maybe (fromJust)
 
 import           Snap.Core
 import           Snap.Util.FileServe
@@ -15,6 +14,7 @@ import           Users
 import           Utils.Http
 import           Utils.Rest
 
+version :: String
 version = "1.0"
 
 main :: IO ()

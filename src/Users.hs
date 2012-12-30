@@ -1,14 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module Users where
+module Users
+    (
+      User(..)
+    , MongoType
+    , getUserByKey
+    , getUserById
+    ) where
 
-import Prelude hiding (lookup)
+import Prelude hiding (id, lookup)
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad.IO.Class (MonadIO)
 
 import Data.Bson
 import Data.Data
+import Data.Text
 import Database.MongoDB
 
 import Utils.Mongo
@@ -28,7 +35,10 @@ instance MongoType User where
         <*> lookup "fname" d
         <*> lookup "lname" d
 
+userDb :: Text
 userDb = "test"
+
+userCollection :: Text
 userCollection = "Users"
 
 getUserByKey :: (MonadIO m) => String -> m (Maybe User)
