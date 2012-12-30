@@ -62,3 +62,13 @@ rqListParam bs rq =
 rqIntListParam :: BS.ByteString -> Request -> [Int]
 rqIntListParam bs rq =
     mapMaybe readIntMaybe (rqListParam bs rq)
+
+writeErrorResponse :: Int -> String -> Snap ()
+writeErrorResponse code message = do
+    modifyResponse $ setResponseStatus code $ BS.pack message
+
+notFoundMsg :: String -> Snap ()
+notFoundMsg message = writeErrorResponse 404 message
+
+notFound :: Snap ()
+notFound = notFoundMsg "NotFound"

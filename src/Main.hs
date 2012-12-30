@@ -1,17 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import           Control.Applicative ((<|>))
+import           Data.Maybe (fromJust)
+
 import           Snap.Core
 import           Snap.Util.FileServe
 import           Snap.Http.Server
 
 import qualified Data.ByteString.Char8 as BS
 
-import           Utils.Http
 import           Users
+import           Utils.Http
+import           Utils.Rest
 
-version :: String
 version = "1.0"
 
 main :: IO ()
@@ -24,14 +27,14 @@ site =
           , ("status", getStatus)
           , ("echo/:echoparam", echoHandler)
           , ("ping/:countparam", pingHandler)
+          , ("users/user/:id", userHandler)
           ] <|>
     dir "static" (serveDirectory ".")
 
 getStatus :: Snap ()
 getStatus =
-    writeBS $ BS.pack output
-    where
-        output = "snaprest running\n\nversion: " ++ version
+    let output = "snaprest running\n\nversion: " ++ version
+    in writeBS $ BS.pack output
 
 echoHandler :: Snap ()
 echoHandler = do
@@ -44,3 +47,5 @@ pingHandler = do
     count <- getIntParamDef "countparam" 10
     writeBS $ BS.pack $ replicate count '*'
 
+userHandler :: Snap ()
+userHandler = jsonGet $ getUserById

@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Users where
 
@@ -7,6 +8,7 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Monad.IO.Class (MonadIO)
 
 import Data.Bson
+import Data.Data
 import Database.MongoDB
 
 import Utils.Mongo
@@ -14,7 +16,7 @@ import Utils.Mongo
 data User = User {
     userId :: Int,
     fname :: String,
-    lname :: String } deriving (Show, Eq)
+    lname :: String } deriving (Data, Typeable, Show, Eq)
 
 instance MongoType User where
     toDoc x = [
