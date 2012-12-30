@@ -1,8 +1,9 @@
 module Utils.Mongo where
 
-import           Control.Monad
-import           Control.Monad.IO.Class
-import           Database.MongoDB
+import Control.Monad ((>=>))
+import Control.Monad.IO.Class (liftIO)
+
+import Database.MongoDB
 
 class MongoType a where
     toDoc :: a -> Document

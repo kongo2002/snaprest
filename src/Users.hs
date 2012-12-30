@@ -3,8 +3,9 @@
 module Users where
 
 import Prelude hiding (lookup)
-import Control.Applicative
-import Control.Monad.IO.Class
+import Control.Applicative ((<$>), (<*>))
+import Control.Monad.IO.Class (MonadIO)
+
 import Data.Bson
 import Database.MongoDB
 
