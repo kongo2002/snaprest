@@ -19,7 +19,10 @@ import Data.Data
 import Data.Text hiding (map)
 import Database.MongoDB
 
+import Types.Address
 import Types.CommDetail
+
+import Utils.Bson
 import Utils.Mongo
 
 data User = User
@@ -28,6 +31,7 @@ data User = User
     , firstName :: String
     , lastName :: String
     , commDetails :: [CommDetail]
+    , addresses :: [Address]
     } deriving (Data, Typeable, Show, Eq)
 
 instance MongoType User where
@@ -35,13 +39,15 @@ instance MongoType User where
         "id" =: id x,
         "fname" =: firstName x,
         "lname" =: lastName x,
-        "cdetails" =: map toDoc (commDetails x)
+        "cdetails" =: map toDoc (commDetails x),
+        "addr" =: map toDoc (addresses x)
         ]
     fromDoc d = User
         <$> lookup "id" d
         <*> lookup "fname" d
         <*> lookup "lname" d
-        <*> (mapM fromDoc =<< lookup "cdetails" d)
+        <*> getList "cdetails" d
+        <*> getList "addr" d
 
 userDb :: Text
 userDb = "test"
