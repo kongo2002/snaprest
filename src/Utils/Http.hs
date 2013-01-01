@@ -64,7 +64,7 @@ rqIntListParam bs rq =
     mapMaybe readIntMaybe (rqListParam bs rq)
 
 setToJson :: Response -> Response
-setToJson = setContentType $ BS.pack "application/json"
+setToJson = setContentType $ BS.pack "application/json; charset=utf-8"
 
 writeErrorResponse :: Int -> String -> Snap ()
 writeErrorResponse code message = do
