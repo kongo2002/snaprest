@@ -32,9 +32,6 @@ instance MongoType CommDetail where
     toDoc x = [
         "type" =: typ x,
         "val" =: value x ]
-        where convType Email = "email"
-              convType Phone = "phone"
-              convType Fax   = "fax"
     fromDoc x = CommDetail
         <$> lookup "type" x
         <*> lookup "val" x

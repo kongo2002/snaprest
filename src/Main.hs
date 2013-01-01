@@ -3,7 +3,6 @@
 module Main where
 
 import           Control.Applicative ((<|>))
-import           Control.Monad.IO.Class (liftIO)
 
 import           Snap.Core
 import           Snap.Util.FileServe
@@ -56,5 +55,5 @@ getUserHandler = jsonGetId $ getUserById
 postUserHandler :: Snap ()
 postUserHandler =
     jsonPost $ \user -> do
-        id <- postUser user
-        writeLBS $ JSON.encode id
+        oid <- postUser user
+        writeLBS $ JSON.encode oid

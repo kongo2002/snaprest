@@ -61,10 +61,10 @@ getUserByKey key =
     in  mongoFindOne userDb query
 
 getUserById :: MonadIO m => Int -> m (Maybe User)
-getUserById id =
+getUserById uid =
     mongoFindOne userDb query
     where
-      query = select ["id" =: id] userCollection
+      query = select ["id" =: uid] userCollection
 
 postUser :: MonadIO m => User -> m String
 postUser user = do

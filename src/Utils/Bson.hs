@@ -3,8 +3,8 @@ module Utils.Bson
       getList
     ) where
 
-import Prelude hiding (lookup)
-import Data.Bson (Document, Label, look, lookup)
+import Prelude hiding (lookup, elem)
+import Data.Bson (Document, Label, lookup)
 import Data.Maybe (mapMaybe)
 
 import Utils.Mongo
