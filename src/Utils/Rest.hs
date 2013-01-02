@@ -41,7 +41,7 @@ jsonGetId func = getSomeIntId $ \id -> do
       Just elem -> do
         modifyResponse $ setToJson
         writeLBS $ JSON.encode $ elem
-      Nothing   -> notFound
+      Nothing   -> writeErrorJson $ "ID " ++ show id ++ " not found"
 
 jsonPost :: Data d => (d -> Snap ()) -> Snap ()
 jsonPost func = method POST $ do
@@ -50,4 +50,4 @@ jsonPost func = method POST $ do
     where
       getJson b = case JSON.decode' b of
         Just d  -> func d
-        Nothing -> invalidInput
+        Nothing -> writeErrorJson "invalid input given"

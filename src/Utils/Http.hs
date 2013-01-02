@@ -1,11 +1,22 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+
 module Utils.Http where
 
 import           Snap.Core
+import           Data.Data
 import           Data.Maybe (fromMaybe, mapMaybe)
 
 import qualified Data.ByteString.Char8 as BS
+import qualified Data.Aeson.Generic as JSON
 
 import           Data.ByteString.Lex.Double (readDouble)
+
+data ErrorJson = ErrorJson
+    {
+      success :: Bool
+    , message :: String
+    , errorCode :: Maybe Int
+    } deriving (Data, Typeable, Show, Eq)
 
 readIntMaybe :: BS.ByteString -> Maybe Int
 readIntMaybe bs = do
@@ -66,13 +77,25 @@ rqIntListParam bs rq =
 setToJson :: Response -> Response
 setToJson = setContentType $ BS.pack "application/json; charset=utf-8"
 
+jsonResponse :: Data a => a -> Snap ()
+jsonResponse element = do
+    modifyResponse setToJson
+    writeLBS $ JSON.encode element
+
 writeErrorResponse :: Int -> String -> Snap ()
-writeErrorResponse code message = do
+writeErrorResponse code msg = do
     modifyResponse $ setResponseCode code
-    writeBS $ BS.pack message
+    writeBS $ BS.pack msg
+
+writeErrorJsonCode :: Maybe Int -> String -> Snap ()
+writeErrorJsonCode code msg =
+    jsonResponse $ ErrorJson False msg code
+
+writeErrorJson :: String -> Snap ()
+writeErrorJson = writeErrorJsonCode Nothing
 
 notFoundMsg :: String -> Snap ()
-notFoundMsg message = writeErrorResponse 404 message
+notFoundMsg msg = writeErrorResponse 404 msg
 
 notFound :: Snap ()
 notFound = notFoundMsg "Not found"
