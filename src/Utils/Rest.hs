@@ -5,7 +5,7 @@ module Utils.Rest where
 import           Prelude hiding (id, elem)
 import           Data.Data
 import           Data.Int
-import qualified Data.Aeson.Generic as JSON
+import           Data.Aeson
 import qualified Data.ByteString.Char8 as BS
 import           Snap.Core
 
@@ -34,20 +34,20 @@ getSomeStr name func = method GET $ do
 getSomeStrKey :: (String -> Snap ()) -> Snap ()
 getSomeStrKey = getSomeStr "key"
 
-jsonGetId :: Data d => (Int -> Snap (Maybe d)) -> Snap ()
+jsonGetId :: ToJSON d => (Int -> Snap (Maybe d)) -> Snap ()
 jsonGetId func = getSomeIntId $ \id -> do
     maybeFound <- func id
     case maybeFound of
       Just elem -> do
         modifyResponse $ setToJson
-        writeLBS $ JSON.encode $ elem
+        writeLBS $ encode $ elem
       Nothing   -> writeErrorJson $ "ID " ++ show id ++ " not found"
 
-jsonPost :: Data d => (d -> Snap ()) -> Snap ()
+jsonPost :: FromJSON d => (d -> Snap ()) -> Snap ()
 jsonPost func = method POST $ do
     body <- readRequestBody maximumBodyLength
     getJson body
     where
-      getJson b = case JSON.decode' b of
+      getJson b = case decode' b of
         Just d  -> func d
         Nothing -> writeErrorJson "invalid input given"

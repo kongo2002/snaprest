@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Types.Address where
@@ -6,8 +7,10 @@ module Types.Address where
 import Prelude hiding (lookup, zip)
 
 import Control.Applicative ((<$>), (<*>))
+import Data.Aeson
 import Data.Bson hiding (value)
 import Data.Data
+import GHC.Generics
 
 import Utils.Mongo
 
@@ -20,7 +23,17 @@ data Address = Address
     , city :: Maybe String
     , country :: Maybe String
     , isPrimary :: Bool
-    } deriving (Data, Typeable, Show, Eq)
+    } deriving (Typeable, Data, Show, Eq, Generic)
+
+-- automatically derived via Generics
+instance FromJSON Address
+
+instance ToJSON Address where
+    toJSON addr =
+        object fields
+        where
+          -- FIXME
+          fields = []
 
 instance MongoType Address where
     toDoc x = [

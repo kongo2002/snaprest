@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Types.Users
     (
@@ -14,15 +15,17 @@ import Prelude hiding (id, lookup)
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 
+import Data.Aeson
 import Data.Bson
 import Data.Data
 import Data.Text hiding (map)
 import Database.MongoDB
+import GHC.Generics
 
 import Types.Address
 import Types.CommDetail
-
 import Utils.Bson
+import Utils.Json
 import Utils.Mongo
 
 data User = User
@@ -32,7 +35,18 @@ data User = User
     , lastName :: String
     , commDetails :: [CommDetail]
     , addresses :: [Address]
-    } deriving (Data, Typeable, Show, Eq)
+    } deriving (Data, Typeable, Show, Eq, Generic)
+
+instance FromJSON User
+
+instance ToJSON User where
+    toJSON (User i f l c a) =
+        selectPairs [
+              Just $ "id" .= i
+            , Just $ "firstName" .= f
+            , Just $ "lastName" .= l
+            , nonEmpty c "commDetails"
+            , nonEmpty a "addresses" ]
 
 instance MongoType User where
     toDoc x = [

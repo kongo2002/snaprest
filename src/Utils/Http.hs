@@ -7,7 +7,6 @@ import           Data.Aeson
 import           Data.Data
 import           Data.Maybe (fromMaybe, mapMaybe)
 
-import qualified Data.Aeson.Generic as JSON
 import qualified Data.ByteString.Char8 as BS
 
 import           Data.ByteString.Lex.Double (readDouble)
@@ -84,10 +83,10 @@ rqIntListParam bs rq =
 setToJson :: Response -> Response
 setToJson = setContentType $ BS.pack "application/json; charset=utf-8"
 
-jsonResponse :: Data a => a -> Snap ()
+jsonResponse :: ToJSON a => a -> Snap ()
 jsonResponse element = do
     modifyResponse setToJson
-    writeLBS $ JSON.encode element
+    writeLBS $ encode element
 
 writeErrorResponse :: Int -> String -> Snap ()
 writeErrorResponse code msg = do
