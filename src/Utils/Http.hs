@@ -1,13 +1,14 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Utils.Http where
 
 import           Snap.Core
+import           Data.Aeson
 import           Data.Data
 import           Data.Maybe (fromMaybe, mapMaybe)
 
-import qualified Data.ByteString.Char8 as BS
 import qualified Data.Aeson.Generic as JSON
+import qualified Data.ByteString.Char8 as BS
 
 import           Data.ByteString.Lex.Double (readDouble)
 
@@ -16,7 +17,13 @@ data ErrorJson = ErrorJson
       success :: Bool
     , message :: String
     , errorCode :: Maybe Int
-    } deriving (Data, Typeable, Show, Eq)
+    } deriving (Show, Eq)
+
+instance ToJSON ErrorJson where
+    toJSON (ErrorJson s m (Just c)) =
+        object ["success" .= s, "message" .= m, "errorCode" .= c]
+    toJSON (ErrorJson s m Nothing) =
+        object ["success" .= s, "message" .= m]
 
 readIntMaybe :: BS.ByteString -> Maybe Int
 readIntMaybe bs = do
@@ -88,8 +95,9 @@ writeErrorResponse code msg = do
     writeBS $ BS.pack msg
 
 writeErrorJsonCode :: Maybe Int -> String -> Snap ()
-writeErrorJsonCode code msg =
-    jsonResponse $ ErrorJson False msg code
+writeErrorJsonCode code msg = do
+    modifyResponse setToJson
+    writeLBS $ encode $ ErrorJson False msg code
 
 writeErrorJson :: String -> Snap ()
 writeErrorJson = writeErrorJsonCode Nothing
