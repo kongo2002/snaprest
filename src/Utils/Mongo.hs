@@ -5,10 +5,10 @@ module Utils.Mongo
     , mongoInsert
     ) where
 
-import Prelude hiding (id, elem)
+import Prelude hiding         ( id, elem )
 import Control.Applicative
-import Control.Monad ((>=>))
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad          ( (>=>) )
+import Control.Monad.IO.Class ( MonadIO, liftIO )
 
 import Database.MongoDB
 

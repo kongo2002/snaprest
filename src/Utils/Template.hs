@@ -4,6 +4,7 @@
 module Utils.Template
     (
       recordToJSON
+    , getRecordFields
     ) where
 
 import           Control.Monad ( mapM, fmap )
@@ -56,11 +57,13 @@ buildRecordArgs nameConv (RecC ctorName types) = do
 
 fieldToJsonExpr nameConv arg fname ty =
     case ty of
+        AppT ListT _            -> listExpr
         AppT (ConT maybeName) _ -> maybeExpr
         someType                -> defExpr
     where
       maybeName = mkName "Data.Maybe.Maybe"
 
+      -- special handling of Maybe types
       maybeExpr = [e|maybe|] `appE` [e|Nothing|] `appE`
         -- maybe Nothing (\_ -> Just ((T.pack "...") .= <fname>)) <fname>
         lam1E wildP
@@ -69,6 +72,18 @@ fieldToJsonExpr nameConv arg fname ty =
                       [e|(.=)|]
                       (varE arg))) `appE` (varE arg)
 
+      -- special handling for List types
+      listExpr = caseE (varE arg) [
+          -- case <fname> of { [] -> Nothing; _ -> defExpr }
+          match (listP [])
+                (normalB [e|Nothing|])
+                [],
+          match wildP
+                (normalB defExpr)
+                []
+        ]
+
+      -- default field handling
       defExpr =
         -- Just ((T.pack "...") .= <fname>)
         [e|Just|] `appE`

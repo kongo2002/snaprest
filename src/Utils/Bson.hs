@@ -4,11 +4,11 @@ module Utils.Bson
     , getMaybe
     ) where
 
-import Prelude hiding (lookup, elem)
-import Data.Bson (Document, Label, lookup, Val)
-import Data.Maybe (mapMaybe)
+import Prelude hiding ( lookup, elem )
+import Data.Bson      ( Document, Label, lookup, Val )
+import Data.Maybe     ( mapMaybe )
 
-import Utils.Mongo
+import Utils.Mongo (MongoType, fromDoc)
 
 getList :: MongoType a => Label -> Document -> Maybe [a]
 getList k doc =
