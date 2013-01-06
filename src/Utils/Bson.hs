@@ -12,12 +12,7 @@ import Utils.Mongo
 
 getList :: MongoType a => Label -> Document -> Maybe [a]
 getList k doc =
-    Just list
-    where
-      elem = lookup k doc
-      list = case elem of
-          Just something -> mapMaybe fromDoc something
-          Nothing        -> []
+    Just $ maybe [] (mapMaybe fromDoc) (lookup k doc)
 
 getMaybe :: Val a => Label -> Document -> Maybe (Maybe a)
 getMaybe k doc = Just $ lookup k doc
