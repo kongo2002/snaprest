@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Types.Address where
 
@@ -8,11 +8,13 @@ import Prelude hiding (lookup, zip)
 
 import Control.Applicative ((<$>), (<*>))
 import Data.Aeson
+import Data.Aeson.TH (mkParseJSON)
 import Data.Bson hiding (value)
 import Data.Data
-import GHC.Generics
 
+import Utils.Bson
 import Utils.Mongo
+import Utils.Template
 
 data Address = Address
     {
@@ -23,17 +25,13 @@ data Address = Address
     , city :: Maybe String
     , country :: Maybe String
     , isPrimary :: Bool
-    } deriving (Typeable, Data, Show, Eq, Generic)
+    } deriving (Typeable, Data, Show, Eq)
 
--- automatically derived via Generics
-instance FromJSON Address
+instance FromJSON Address where
+    parseJSON = $(mkParseJSON id ''Address)
 
 instance ToJSON Address where
-    toJSON addr =
-        object fields
-        where
-          -- FIXME
-          fields = []
+    toJSON = $(recordToJSON ''Address)
 
 instance MongoType Address where
     toDoc x = [
@@ -46,10 +44,10 @@ instance MongoType Address where
         "zip" =: zip x ]
     fromDoc x = Address
         <$> lookup "str1" x
-        <*> lookup "str2" x
-        <*> lookup "str3" x
-        <*> lookup "zip" x
-        <*> lookup "city" x
-        <*> lookup "country" x
+        <*> getMaybe "str2" x
+        <*> getMaybe "str3" x
+        <*> getMaybe "zip" x
+        <*> getMaybe "city" x
+        <*> getMaybe "country" x
         <*> lookup "prim" x
 
