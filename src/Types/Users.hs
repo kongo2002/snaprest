@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Types.Users
     (
@@ -11,9 +11,9 @@ module Types.Users
     , postUser
     ) where
 
-import Prelude hiding (id, lookup)
-import Control.Applicative ((<$>), (<*>))
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Prelude hiding ( id, lookup )
+import Control.Applicative ( (<$>), (<*>) )
+import Control.Monad.IO.Class ( MonadIO, liftIO )
 
 import Data.Aeson
 import Data.Bson
@@ -27,6 +27,7 @@ import Types.CommDetail
 import Utils.Bson
 import Utils.Json
 import Utils.Mongo
+import Utils.Template
 
 data User = User
     {
@@ -35,18 +36,13 @@ data User = User
     , lastName :: String
     , commDetails :: [CommDetail]
     , addresses :: [Address]
-    } deriving (Data, Typeable, Show, Eq, Generic)
+    } deriving (Data, Typeable, Show, Eq)
 
-instance FromJSON User
+instance FromJSON User where
+    parseJSON = $(fromJSONFunc ''User)
 
 instance ToJSON User where
-    toJSON (User i f l c a) =
-        selectPairs [
-              Just $ "id" .= i
-            , Just $ "firstName" .= f
-            , Just $ "lastName" .= l
-            , nonEmpty c "commDetails"
-            , nonEmpty a "addresses" ]
+    toJSON = $(toJSONFunc ''User)
 
 instance MongoType User where
     toDoc x = [

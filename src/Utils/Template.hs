@@ -3,18 +3,20 @@
 
 module Utils.Template
     (
-      recordToJSON
+      toJSONFunc
+    , fromJSONFunc
     , getRecordFields
     ) where
 
-import           Control.Monad ( mapM, fmap )
-import           Data.Aeson
-import           Data.Function ( (.), ($), id )
-import           Data.List ( map, (++), zip, concatMap )
-import           Data.Maybe ( Maybe(..), catMaybes, maybe )
+import           Control.Monad  ( mapM, fmap )
+import           Data.Aeson     ( object, (.=) )
+import           Data.Aeson.TH  ( mkParseJSON )
+import           Data.Function  ( (.), ($), id )
+import           Data.List      ( map, (++), zip, concatMap )
+import           Data.Maybe     ( Maybe(..), catMaybes, maybe )
 import qualified Data.Text as T ( pack )
-import           Prelude ( error )
-import           Text.Show ( show )
+import           Prelude        ( error )
+import           Text.Show      ( show )
 
 import           Language.Haskell.TH
 
@@ -32,8 +34,10 @@ useType name func = do
           other -> error $ "Utils.Template: Unsupported type: " ++ show other
       _ -> error "Utils.Template: No type name found"
 
-recordToJSON name =
+toJSONFunc name =
     useType name (\_ ctors -> recordLambda sanitizeField ctors)
+
+fromJSONFunc = mkParseJSON id
 
 recordLambda nameConv [ctor] = do
     value <- newName "value"

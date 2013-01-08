@@ -8,7 +8,6 @@ import Prelude hiding (lookup, zip)
 
 import Control.Applicative ((<$>), (<*>))
 import Data.Aeson
-import Data.Aeson.TH (mkParseJSON)
 import Data.Bson hiding (value)
 import Data.Data
 
@@ -28,10 +27,10 @@ data Address = Address
     } deriving (Typeable, Data, Show, Eq)
 
 instance FromJSON Address where
-    parseJSON = $(mkParseJSON id ''Address)
+    parseJSON = $(fromJSONFunc ''Address)
 
 instance ToJSON Address where
-    toJSON = $(recordToJSON ''Address)
+    toJSON = $(toJSONFunc ''Address)
 
 instance MongoType Address where
     toDoc x = [
