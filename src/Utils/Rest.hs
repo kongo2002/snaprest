@@ -3,7 +3,6 @@
 module Utils.Rest where
 
 import           Prelude hiding (id, elem)
-import           Data.Data
 import           Data.Int
 import           Data.Aeson
 import qualified Data.ByteString.Char8 as BS

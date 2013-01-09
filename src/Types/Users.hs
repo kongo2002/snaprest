@@ -16,15 +16,14 @@ import Control.Applicative ( (<$>), (<*>) )
 import Control.Monad.IO.Class ( MonadIO, liftIO )
 
 import Data.Aeson
-import Data.Bson
+import Data.Bson hiding (value)
 import Data.Data
 import Data.Text hiding (map)
-import Database.MongoDB
+import Database.MongoDB hiding (value)
 
 import Types.Address
 import Types.CommDetail
 import Utils.Bson
-import Utils.Json
 import Utils.Mongo
 import Utils.Template
 

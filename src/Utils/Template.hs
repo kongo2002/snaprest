@@ -9,31 +9,36 @@ module Utils.Template
     , fromVal
     ) where
 
-import           Control.Monad  ( mapM, fmap, return )
-import           Data.Aeson     ( object, (.=), toJSON, Value(..) )
+import           Control.Monad  ( mapM, return )
+import           Data.Aeson     ( object, (.=), toJSON )
 import           Data.Aeson.TH  ( mkParseJSON )
 import qualified Data.Bson as B
 import           Data.Char      ( isUpper, toLower )
 import           Data.Eq        ( (==) )
 import           Data.Bool      ( Bool(..) )
 import           Data.Function  ( (.), ($), id )
-import           Data.List      ( map, (++), zip, concatMap, length )
+import           Data.List      ( map, (++), zip, length )
 import           Data.Maybe     ( Maybe(..), catMaybes, maybe )
 import qualified Data.Text as T ( pack )
-import           Prelude        ( error )
+import           Prelude        ( error, Integer, String )
 import           Text.Show      ( show )
 
 import           Language.Haskell.TH
 
+sanitizeField :: String -> String
+sanitizeField [] = []
 sanitizeField str@(x:xs)
     | x == '_'  = xs
     | isUpper x = toLower x : xs
     | True      = str
 
-field conv = stringL . conv . nameBase
+fieldL :: (String -> String) -> Name -> Lit
+fieldL conv = stringL . conv . nameBase
 
-fieldExpr conv = litE . field conv
+fieldExpr :: (String -> String) -> Name -> ExpQ
+fieldExpr conv = litE . fieldL conv
 
+useType :: Name -> ([TyVarBndr] -> [Con] -> Q Exp) -> Q Exp
 useType name func = do
     info <- reify name
     case info of
@@ -43,11 +48,14 @@ useType name func = do
           other -> error $ "Utils.Template: Unsupported type: " ++ show other
       _ -> error "Utils.Template: No type name found"
 
+toJSONFunc :: Name -> Q Exp
 toJSONFunc name =
     useType name (\_ ctors -> ctorLambda buildJsonArgs sanitizeField ctors)
 
+fromJSONFunc :: Name -> Q Exp
 fromJSONFunc = mkParseJSON id
 
+ctorLambda :: ((String -> String) -> Con -> MatchQ) -> (String -> String) -> [Con] -> ExpQ
 ctorLambda exprFunc nameConv ctors = do
     value <- newName "value"
     lam1E (varP value) $
@@ -56,9 +64,11 @@ ctorLambda exprFunc nameConv ctors = do
               | ctor <- ctors
               ]
 
+toVal :: Name -> Q Exp
 toVal name =
     useType name (\_ ctors -> ctorLambda buildToValArgs sanitizeField ctors)
 
+fromVal :: Name -> Q Exp
 fromVal name =
     useType name (\_ ctors -> do
         value <- newName "value"
@@ -66,12 +76,15 @@ fromVal name =
             caseE (varE value)
                   ([buildFromValArgs sanitizeField ctor | ctor <- ctors] ++ [wildcardMatch]))
 
+wildcardMatch :: MatchQ
 wildcardMatch = do
     match wildP (normalB [e|Nothing|]) []
 
+stringValue :: (String -> String) -> Name -> ExpQ
 stringValue nameConv ctor =
     [e|B.String|] `appE` ([e|T.pack|] `appE` (fieldExpr nameConv $ ctor))
 
+buildToValArgs :: (String -> String) -> Con -> MatchQ
 buildToValArgs nameConv (NormalC ctor []) = do
     match (conP ctor [])
           (normalB $ stringValue nameConv ctor)
@@ -79,8 +92,9 @@ buildToValArgs nameConv (NormalC ctor []) = do
 
 buildToValArgs _ _ = error "Utils.Template: specified constructor type is not supported yet"
 
+buildFromValArgs :: (String -> String) -> Con -> MatchQ
 buildFromValArgs nameConv (NormalC ctor []) = do
-    match (conP strName [litP $ field nameConv ctor])
+    match (conP strName [litP $ fieldL nameConv ctor])
           (normalB $ [e|Just|] `appE` conE ctor)
           []
     where
@@ -88,9 +102,10 @@ buildFromValArgs nameConv (NormalC ctor []) = do
 
 buildFromValArgs _ _ = error "Utils.Template: specified constructor type is not supported yet"
 
+buildJsonArgs :: (String -> String) -> Con -> MatchQ
 buildJsonArgs nameConv (RecC ctorName types) = do
     -- get argument names
-    args <- mapM newName ["arg" ++ show n | (_, n) <- zip types [1..]]
+    args <- mapM newName ["arg" ++ show n | (_, n) <- zip types [1 :: Integer ..]]
     -- build field expressions
     let fields = [ fieldToJsonExpr nameConv arg field ty
                  | (arg, (field, _, ty)) <- zip args types
@@ -106,21 +121,24 @@ buildJsonArgs nameConv (NormalC ctor []) = do
           (normalB $ [e|toJSON|] `appE` ([e|T.pack|] `appE` (fieldExpr nameConv $ ctor)))
           []
 
-buildJsonArgs nameConv (NormalC ctor types) = do
+buildJsonArgs _ (NormalC ctor types) = do
     let len = length types
     args <- mapM newName ["arg" ++ show n | n <- [1..len]]
     field <- case [ [e|toJSON|] `appE` varE arg | arg <- args ] of
                 [expr] -> return expr
-                exprs  -> error "Utils.Template: multiple constructor arguments are not supported yet"
+                _      -> error "Utils.Template: multiple constructor arguments are not supported yet"
     match (conP ctor $ map varP args)
           (normalB field)
           []
 
+buildJsonArgs _ _ = error "Utils.Template: constructor type is not supported yet"
+
+fieldToJsonExpr :: (String -> String) -> Name -> Name -> Type -> ExpQ
 fieldToJsonExpr nameConv arg fname ty =
     case ty of
-        AppT ListT _            -> listExpr
-        AppT (ConT maybeName) _ -> maybeExpr
-        someType                -> defExpr
+        AppT ListT _                     -> listExpr
+        AppT (ConT m) _ | m == maybeName -> maybeExpr
+        _                                -> defExpr
     where
       maybeName = mkName "Data.Maybe.Maybe"
 

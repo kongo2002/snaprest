@@ -28,8 +28,8 @@ instance ToJSON CommType where
 
 data CommDetail = CommDetail
     {
-      typ :: CommType
-    , value :: String
+      cdType :: CommType
+    , cdValue :: String
     } deriving (Data, Typeable, Show, Eq)
 
 instance FromJSON CommDetail where
@@ -52,8 +52,8 @@ instance ToJSON CommDetail where
 
 instance MongoType CommDetail where
     toDoc x = [
-        "type" =: typ x,
-        "val" =: value x ]
+        "type" =: cdType x,
+        "val" =: cdValue x ]
     fromDoc x = CommDetail
         <$> lookup "type" x
         <*> lookup "val" x

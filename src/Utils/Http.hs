@@ -4,7 +4,6 @@ module Utils.Http where
 
 import           Snap.Core
 import           Data.Aeson
-import           Data.Data
 import           Data.Maybe (fromMaybe, mapMaybe)
 
 import qualified Data.ByteString.Char8 as BS
