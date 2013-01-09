@@ -8,11 +8,14 @@ module Utils.Template
     , getRecordFields
     ) where
 
-import           Control.Monad  ( mapM, fmap )
-import           Data.Aeson     ( object, (.=) )
+import           Control.Monad  ( mapM, fmap, return )
+import           Data.Aeson     ( object, (.=), toJSON )
 import           Data.Aeson.TH  ( mkParseJSON )
+import           Data.Char      ( isUpper, toLower )
+import           Data.Eq        ( (==) )
+import           Data.Bool      ( Bool(..) )
 import           Data.Function  ( (.), ($), id )
-import           Data.List      ( map, (++), zip, concatMap )
+import           Data.List      ( map, (++), zip, concatMap, length )
 import           Data.Maybe     ( Maybe(..), catMaybes, maybe )
 import qualified Data.Text as T ( pack )
 import           Prelude        ( error )
@@ -20,8 +23,10 @@ import           Text.Show      ( show )
 
 import           Language.Haskell.TH
 
-sanitizeField ('_':xs) = xs
-sanitizeField xs       = xs
+sanitizeField str@(x:xs)
+    | x == '_'  = xs
+    | isUpper x = toLower x : xs
+    | True      = str
 
 fieldExpr conv = litE . stringL . conv . nameBase
 
@@ -44,7 +49,14 @@ recordLambda nameConv [ctor] = do
     lam1E (varP value) $
         caseE (varE value)
               [ buildRecordArgs nameConv ctor ]
-recordLambda _ ctors = error "Utils.Template: multiple constructor types not supported yet"
+
+recordLambda nameConv ctors = do
+    value <- newName "value"
+    lam1E (varP value) $
+        caseE (varE value)
+              [ buildRecordArgs nameConv ctor
+              | ctor <- ctors
+              ]
 
 buildRecordArgs nameConv (RecC ctorName types) = do
     -- get argument names
@@ -57,6 +69,21 @@ buildRecordArgs nameConv (RecC ctorName types) = do
     match (conP ctorName $ map varP args)
           -- object $ catMaybes [ ... ]
           (normalB $ [e|object|] `appE` ([e|catMaybes|] `appE` listE fields))
+          []
+
+buildRecordArgs nameConv (NormalC ctor []) = do
+    match (conP ctor [])
+          (normalB $ fieldExpr nameConv $ ctor)
+          []
+
+buildRecordArgs nameConv (NormalC ctor types) = do
+    let len = length types
+    args <- mapM newName ["arg" ++ show n | n <- [1..len]]
+    field <- case [ [e|toJSON|] `appE` varE arg | arg <- args ] of
+                [expr] -> return expr
+                exprs  -> error "Utils.Template: multiple constructor arguments are not supported yet"
+    match (conP ctor $ map varP args)
+          (normalB field)
           []
 
 fieldToJsonExpr nameConv arg fname ty =
