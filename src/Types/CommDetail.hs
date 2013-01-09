@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Types.CommDetail where
 
@@ -13,19 +14,17 @@ import Data.Text
 import Data.Data
 
 import Utils.Mongo
+import Utils.Template
 
 data CommType = Email | Phone | Fax
     deriving (Data, Typeable, Show, Eq)
 
 instance Val CommType where
-    val Email = String "email"
-    val Phone = String "phone"
-    val Fax   = String "fax"
+    val = $(toVal ''CommType)
+    cast' = $(fromVal ''CommType)
 
-    cast' (String "email") = Just Email
-    cast' (String "phone") = Just Phone
-    cast' (String "fax")   = Just Fax
-    cast' _                = Nothing
+instance ToJSON CommType where
+    toJSON = $(toJSONFunc ''CommType)
 
 data CommDetail = CommDetail
     {

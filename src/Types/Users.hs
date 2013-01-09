@@ -20,7 +20,6 @@ import Data.Bson
 import Data.Data
 import Data.Text hiding (map)
 import Database.MongoDB
-import GHC.Generics
 
 import Types.Address
 import Types.CommDetail

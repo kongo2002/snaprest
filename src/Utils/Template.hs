@@ -5,12 +5,14 @@ module Utils.Template
     (
       toJSONFunc
     , fromJSONFunc
-    , getRecordFields
+    , toVal
+    , fromVal
     ) where
 
 import           Control.Monad  ( mapM, fmap, return )
-import           Data.Aeson     ( object, (.=), toJSON )
+import           Data.Aeson     ( object, (.=), toJSON, Value(..) )
 import           Data.Aeson.TH  ( mkParseJSON )
+import qualified Data.Bson as B
 import           Data.Char      ( isUpper, toLower )
 import           Data.Eq        ( (==) )
 import           Data.Bool      ( Bool(..) )
@@ -28,7 +30,9 @@ sanitizeField str@(x:xs)
     | isUpper x = toLower x : xs
     | True      = str
 
-fieldExpr conv = litE . stringL . conv . nameBase
+field conv = stringL . conv . nameBase
+
+fieldExpr conv = litE . field conv
 
 useType name func = do
     info <- reify name
@@ -40,25 +44,51 @@ useType name func = do
       _ -> error "Utils.Template: No type name found"
 
 toJSONFunc name =
-    useType name (\_ ctors -> recordLambda sanitizeField ctors)
+    useType name (\_ ctors -> ctorLambda buildJsonArgs sanitizeField ctors)
 
 fromJSONFunc = mkParseJSON id
 
-recordLambda nameConv [ctor] = do
+ctorLambda exprFunc nameConv ctors = do
     value <- newName "value"
     lam1E (varP value) $
         caseE (varE value)
-              [ buildRecordArgs nameConv ctor ]
-
-recordLambda nameConv ctors = do
-    value <- newName "value"
-    lam1E (varP value) $
-        caseE (varE value)
-              [ buildRecordArgs nameConv ctor
+              [ exprFunc nameConv ctor
               | ctor <- ctors
               ]
 
-buildRecordArgs nameConv (RecC ctorName types) = do
+toVal name =
+    useType name (\_ ctors -> ctorLambda buildToValArgs sanitizeField ctors)
+
+fromVal name =
+    useType name (\_ ctors -> do
+        value <- newName "value"
+        lam1E (varP value) $
+            caseE (varE value)
+                  ([buildFromValArgs sanitizeField ctor | ctor <- ctors] ++ [wildcardMatch]))
+
+wildcardMatch = do
+    match wildP (normalB [e|Nothing|]) []
+
+stringValue nameConv ctor =
+    [e|B.String|] `appE` ([e|T.pack|] `appE` (fieldExpr nameConv $ ctor))
+
+buildToValArgs nameConv (NormalC ctor []) = do
+    match (conP ctor [])
+          (normalB $ stringValue nameConv ctor)
+          []
+
+buildToValArgs _ _ = error "Utils.Template: specified constructor type is not supported yet"
+
+buildFromValArgs nameConv (NormalC ctor []) = do
+    match (conP strName [litP $ field nameConv ctor])
+          (normalB $ [e|Just|] `appE` conE ctor)
+          []
+    where
+      strName = mkName "String"
+
+buildFromValArgs _ _ = error "Utils.Template: specified constructor type is not supported yet"
+
+buildJsonArgs nameConv (RecC ctorName types) = do
     -- get argument names
     args <- mapM newName ["arg" ++ show n | (_, n) <- zip types [1..]]
     -- build field expressions
@@ -71,12 +101,12 @@ buildRecordArgs nameConv (RecC ctorName types) = do
           (normalB $ [e|object|] `appE` ([e|catMaybes|] `appE` listE fields))
           []
 
-buildRecordArgs nameConv (NormalC ctor []) = do
+buildJsonArgs nameConv (NormalC ctor []) = do
     match (conP ctor [])
-          (normalB $ [e|T.pack|] `appE` (fieldExpr nameConv $ ctor))
+          (normalB $ [e|toJSON|] `appE` ([e|T.pack|] `appE` (fieldExpr nameConv $ ctor)))
           []
 
-buildRecordArgs nameConv (NormalC ctor types) = do
+buildJsonArgs nameConv (NormalC ctor types) = do
     let len = length types
     args <- mapM newName ["arg" ++ show n | n <- [1..len]]
     field <- case [ [e|toJSON|] `appE` varE arg | arg <- args ] of
@@ -121,20 +151,3 @@ fieldToJsonExpr nameConv arg fname ty =
             (infixApp ([e|T.pack|] `appE` fieldExpr nameConv fname)
                       [e|(.=)|]
                       (varE arg))
-
---------------------------------------------------------------------------------
--- Testing functions
---------------------------------------------------------------------------------
-
-getRecordFields n = do
-    rfs <- fmap getRecordFields' $ reify n
-    litE . stringL $ show rfs
-    where
-      getRecordFields' (TyConI (DataD _ _ _ ctors _)) = concatMap getRF' ctors
-      getRecordFields' _ = []
-
-      getRF' (RecC name fields) = [(nameBase name, map getFieldInfo fields)]
-      getRF' _ = []
-
-      getFieldInfo (name, _, ty) = (nameBase name, show ty)
-
