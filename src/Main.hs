@@ -24,12 +24,12 @@ main = quickHttpServe site
 site :: Snap ()
 site =
     ifTop (writeBS "snaprest - REST web services (testing project)") <|>
-    route [ ("foo", writeBS "bar")
-          , ("status", getStatus)
-          , ("echo/:echoparam", echoHandler)
+    route [ ("foo",              writeBS "bar")
+          , ("status",           getStatus)
+          , ("echo/:echoparam",  echoHandler)
           , ("ping/:countparam", pingHandler)
-          , ("users/user/:id", getUserHandler)
-          , ("users/user", postUserHandler)
+          , ("users/user/:id",   getUserHandler)
+          , ("users/user",       postUserHandler)
           ] <|>
     dir "static" (serveDirectory ".")
 
