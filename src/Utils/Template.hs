@@ -73,7 +73,7 @@ buildRecordArgs nameConv (RecC ctorName types) = do
 
 buildRecordArgs nameConv (NormalC ctor []) = do
     match (conP ctor [])
-          (normalB $ fieldExpr nameConv $ ctor)
+          (normalB $ [e|T.pack|] `appE` (fieldExpr nameConv $ ctor))
           []
 
 buildRecordArgs nameConv (NormalC ctor types) = do
