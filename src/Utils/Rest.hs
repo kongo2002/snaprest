@@ -42,8 +42,8 @@ jsonGetId func = getSomeIntId $ \id -> do
         writeLBS $ encode $ elem
       Nothing   -> writeErrorJson $ "ID " ++ show id ++ " not found"
 
-jsonPost :: FromJSON d => (d -> Snap ()) -> Snap ()
-jsonPost func = method POST $ do
+jsonPut :: FromJSON d => (d -> Snap ()) -> Snap ()
+jsonPut func = method PUT $ do
     body <- readRequestBody maximumBodyLength
     getJson body
     where

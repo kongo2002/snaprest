@@ -6,19 +6,21 @@ module Types.Users
     (
       User(..)
     , MongoType
-    , getUserByKey
     , getUserById
-    , postUser
+    , putUser
+    , validate
     ) where
 
 import Prelude hiding ( id, lookup )
+import Control.Monad ( mzero )
 import Control.Applicative ( (<$>), (<*>) )
 import Control.Monad.IO.Class ( MonadIO, liftIO )
 
 import Data.Aeson
 import Data.Bson hiding (value)
+import Data.Char (isDigit)
 import Data.Data
-import Data.Text hiding (map)
+import Data.Text (Text)
 import Database.MongoDB hiding (value)
 
 import Types.Address
@@ -26,6 +28,7 @@ import Types.CommDetail
 import Utils.Bson
 import Utils.Mongo
 import Utils.Template
+import Utils.Validation
 
 data User = User
     {
@@ -37,21 +40,27 @@ data User = User
     } deriving (Data, Typeable, Show, Eq)
 
 instance FromJSON User where
-    parseJSON = $(fromJSONFunc ''User)
+    parseJSON (Object v) = User <$>
+        v .:? "id" .!= 0 <*>
+        v .: "firstName" <*>
+        v .: "lastName" <*>
+        v .:? "commDetails" .!= [] <*>
+        v .:? "addresses" .!= []
+    parseJSON _ = mzero
 
 instance ToJSON User where
     toJSON = $(toJSONFunc ''User)
 
 instance MongoType User where
     toDoc x = [
-        "id" =: id x,
+        "_id" =: id x,
         "fname" =: firstName x,
         "lname" =: lastName x,
         "cdetails" =: map toDoc (commDetails x),
         "addr" =: map toDoc (addresses x)
         ]
     fromDoc d = User
-        <$> lookup "id" d
+        <$> lookup "_id" d
         <*> lookup "fname" d
         <*> lookup "lname" d
         <*> getList "cdetails" d
@@ -63,18 +72,23 @@ userDb = "test"
 userCollection :: Text
 userCollection = "Users"
 
-getUserByKey :: MonadIO m => String -> m (Maybe User)
-getUserByKey key =
-    let query = select ["_id" =: (read key :: ObjectId)] userCollection
-    in  mongoFindOne userDb query
+validate :: User -> Either String Bool
+validate u =
+    ensure "invalid firstname given" (validName $ firstName u) True >>=
+    ensure "invalid lastname given" (validName $ lastName u)
+    where
+      validName [] = False
+      validName (x:_)
+        | isDigit x = False
+        | otherwise = True
 
 getUserById :: MonadIO m => Int -> m (Maybe User)
 getUserById uid =
     mongoFindOne userDb query
     where
-      query = select ["id" =: uid] userCollection
+      query = select ["_id" =: uid] userCollection
 
-postUser :: MonadIO m => User -> m String
-postUser user = do
+putUser :: MonadIO m => User -> m String
+putUser user = do
     liftIO $ putStrLn $ "Insert new user: " ++ (show user)
     liftIO $ mongoInsert userDb userCollection user

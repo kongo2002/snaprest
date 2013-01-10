@@ -29,7 +29,7 @@ site =
           , ("echo/:echoparam",  echoHandler)
           , ("ping/:countparam", pingHandler)
           , ("users/user/:id",   getUserHandler)
-          , ("users/user",       postUserHandler)
+          , ("users/user",       putUserHandler)
           ] <|>
     dir "static" (serveDirectory ".")
 
@@ -52,8 +52,11 @@ pingHandler = do
 getUserHandler :: Snap ()
 getUserHandler = jsonGetId $ getUserById
 
-postUserHandler :: Snap ()
-postUserHandler =
-    jsonPost $ \user -> do
-        oid <- postUser user
-        writeLBS $ JSON.encode oid
+putUserHandler :: Snap ()
+putUserHandler =
+    jsonPut $ \user ->
+        case validate user of
+            Left err -> writeErrorJson err
+            Right _  -> do
+                oid <- putUser user
+                writeLBS $ JSON.encode oid
