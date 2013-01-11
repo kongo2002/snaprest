@@ -11,6 +11,7 @@ import Control.Monad (mzero)
 import Data.Aeson
 import Data.Bson hiding (value)
 import Data.Data
+import Data.Maybe (catMaybes)
 
 import Utils.Bson
 import Utils.Mongo
@@ -42,14 +43,14 @@ instance ToJSON Address where
     toJSON = $(toJSONFunc ''Address)
 
 instance MongoType Address where
-    toDoc x = [
-        "str1" =: street1 x,
-        "str2" =: street2 x,
-        "str3" =: street3 x,
-        "city" =: city x,
-        "country" =: country x,
-        "prim" =: isPrimary x,
-        "zip" =: zip x ]
+    toDoc x = catMaybes [
+        Just ("str1" =: street1 x),
+        setMaybe "str2" $ street2 x,
+        setMaybe "str3" $ street3 x,
+        setMaybe "city" $ city x,
+        setMaybe "country" $ country x,
+        setMaybe "zip" $ zip x,
+        Just ("prim" =: isPrimary x)]
     fromDoc x = Address
         <$> lookup "str1" x
         <*> getMaybe "str2" x
