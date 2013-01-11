@@ -136,11 +136,12 @@ buildJsonArgs _ _ = error "Utils.Template: constructor type is not supported yet
 fieldToJsonExpr :: (String -> String) -> Name -> Name -> Type -> ExpQ
 fieldToJsonExpr nameConv arg fname ty =
     case ty of
-        AppT ListT _                     -> listExpr
-        AppT (ConT m) _ | m == maybeName -> maybeExpr
-        _                                -> defExpr
+        AppT ListT _                            -> listExpr
+        -- TODO: there has to be something better...
+        AppT (ConT m) _ | (show m) == maybeName -> maybeExpr
+        _                                       -> defExpr
     where
-      maybeName = mkName "Data.Maybe.Maybe"
+      maybeName = "Data.Maybe.Maybe"
 
       -- special handling of Maybe types
       maybeExpr = [e|maybe|] `appE` [e|Nothing|] `appE`
