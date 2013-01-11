@@ -55,7 +55,7 @@ getUserHandler = jsonGetId $ getUserById
 putUserHandler :: Snap ()
 putUserHandler =
     jsonPut $ \user ->
-        case validate user of
+        case validateUser user of
             Left err -> writeErrorJson err
             Right _  -> do
                 oid <- putUser user

@@ -8,7 +8,7 @@ module Types.Users
     , MongoType
     , getUserById
     , putUser
-    , validate
+    , validateUser
     ) where
 
 import Prelude hiding ( id, lookup )
@@ -72,10 +72,11 @@ userDb = "test"
 userCollection :: Text
 userCollection = "Users"
 
-validate :: User -> Either String Bool
-validate u =
+validateUser :: User -> Either String Bool
+validateUser u =
     ensure "invalid firstname given" (validName $ firstName u) True >>=
-    ensure "invalid lastname given" (validName $ lastName u)
+    ensure "invalid lastname given" (validName $ lastName u) >>=
+    ensure "invalid communication details given" (validateDetails $ commDetails u)
     where
       validName [] = False
       validName (x:_)
