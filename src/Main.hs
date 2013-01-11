@@ -15,7 +15,7 @@ import           Utils.Http
 import           Utils.Rest
 
 version :: String
-version = "1.0"
+version = "0.1"
 
 main :: IO ()
 main = quickHttpServe site
