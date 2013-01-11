@@ -7,6 +7,7 @@ module Types.Address where
 import Prelude hiding (lookup, zip)
 
 import Control.Applicative ((<$>), (<*>))
+import Control.Monad (mzero)
 import Data.Aeson
 import Data.Bson hiding (value)
 import Data.Data
@@ -27,7 +28,15 @@ data Address = Address
     } deriving (Typeable, Data, Show, Eq)
 
 instance FromJSON Address where
-    parseJSON = $(fromJSONFunc ''Address)
+    parseJSON (Object v) = Address <$>
+        v .: "street1" <*>
+        v .:? "street2" .!= Nothing <*>
+        v .:? "street3" .!= Nothing <*>
+        v .:? "zip" .!= Nothing <*>
+        v .:? "city" .!= Nothing <*>
+        v .:? "country" .!= Nothing <*>
+        v .:? "isPrimary" .!= False
+    parseJSON _ = mzero
 
 instance ToJSON Address where
     toJSON = $(toJSONFunc ''Address)
