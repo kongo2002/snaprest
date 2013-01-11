@@ -1,8 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Utils.Mongo
     (
       MongoType(..)
     , mongoFindOne
     , mongoInsert
+    , mongoInsertIntId
+    , mongoGetId
     ) where
 
 import Prelude hiding         ( id, elem )
@@ -15,6 +19,9 @@ import Database.MongoDB
 class MongoType a where
     toDoc :: a -> Document
     fromDoc :: Document -> (Maybe a)
+
+counterCollection :: Collection
+counterCollection = "counters"
 
 exec :: MonadIO m => Database -> Action m a -> m a
 exec db action = do
@@ -29,6 +36,16 @@ mongoFindOne :: MonadIO m => MongoType t => Database -> Query -> m (Maybe t)
 mongoFindOne db query = do
     doc <- exec db $ findOne query
     return (doc >>= (fromDoc >=> Just))
+
+mongoGetId :: MonadIO m => Database -> Collection -> m Int
+mongoGetId db col = do
+    exec db $ modify (select sel counterCollection) ["$inc" =: [ "current" =: (1 :: Int) ]]
+    result <- exec db $ findOne $ select sel counterCollection
+    case result of
+        Just v  -> return $ (at "current" v :: Int)
+        Nothing -> fail "unable to get counter"
+    where
+      sel = [ "_id" =: col ]
 
 mongoInsert :: Applicative m => MonadIO m => MongoType a => Database -> Collection -> a -> m String
 mongoInsert db col elem = do

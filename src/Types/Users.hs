@@ -89,6 +89,8 @@ getUserById uid =
       query = select ["_id" =: uid] userCollection
 
 putUser :: MonadIO m => User -> m String
-putUser user = do
+putUser u = do
+    userId <- mongoGetId userDb userCollection
+    let user = u { id = userId }
     liftIO $ putStrLn $ "Insert new user: " ++ (show user)
-    liftIO $ mongoInsert userDb userCollection user
+    liftIO $ mongoInsertIntId userDb userCollection user
