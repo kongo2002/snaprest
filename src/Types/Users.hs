@@ -13,7 +13,7 @@ module Types.Users
 
 import Prelude hiding ( id, lookup )
 import Control.Monad ( mzero )
-import Control.Applicative ( (<$>), (<*>) )
+import Control.Applicative ( (<$>), (<*>), Applicative )
 import Control.Monad.IO.Class ( MonadIO, liftIO )
 
 import Data.Aeson
@@ -96,9 +96,12 @@ getUserById uid =
     where
       query = select ["_id" =: uid] userCollection
 
-putUser :: MonadIO m => User -> m String
+putUser :: MonadIO m => Applicative m => User -> m User
 putUser u = do
+    -- retrieve new user ID
     userId <- mongoGetId userDb userCollection
     let user = u { id = userId }
     liftIO $ putStrLn $ "Insert new user: " ++ (show user)
+
+    -- insert and return new user
     liftIO $ mongoInsertIntId userDb userCollection user

@@ -9,7 +9,6 @@ import           Snap.Util.FileServe
 import           Snap.Http.Server
 
 import qualified Data.ByteString.Char8 as BS
-import           Data.Aeson.Generic as JSON
 
 import           Types.Users
 import           Utils.Http
@@ -58,5 +57,5 @@ putUserHandler =
         case validateUser user of
             Left err -> writeErrorJson err
             Right _  -> do
-                oid <- putUser user
-                writeLBS $ JSON.encode oid
+                u <- putUser user
+                jsonResponse u

@@ -20,8 +20,8 @@ class MongoType a where
     toDoc :: a -> Document
     fromDoc :: Document -> (Maybe a)
 
-counterCollection :: Collection
-counterCollection = "counters"
+counterC :: Collection
+counterC = "counters"
 
 exec :: MonadIO m => Database -> Action m a -> m a
 exec db action = do
@@ -32,31 +32,41 @@ exec db action = do
         Right v      -> return v
         Left failure -> fail $ show failure
 
+findAndModify :: MonadIO m => Applicative m => Collection -> Document -> Modifier -> Bool -> Bool -> Action m Document
+findAndModify col q u new upsert =
+    let cmd = [ "findAndModify" =: col,
+                "query" =: q,
+                "update" =: u,
+                "new" =: new,
+                "upsert" =: upsert ]
+    in runCommand cmd
+
 mongoFindOne :: MonadIO m => MongoType t => Database -> Query -> m (Maybe t)
 mongoFindOne db query = do
     doc <- exec db $ findOne query
     return (doc >>= (fromDoc >=> Just))
 
-mongoGetId :: MonadIO m => Database -> Collection -> m Int
+mongoGetId :: MonadIO m => Applicative m => Database -> Collection -> m Int
 mongoGetId db col = do
-    exec db $ modify (select sel counterCollection) ["$inc" =: [ "current" =: (1 :: Int) ]]
-    result <- exec db $ findOne $ select sel counterCollection
-    case result of
-        Just v  -> return $ (at "current" v :: Int)
-        Nothing -> fail "unable to get counter"
-    where
-      sel = [ "_id" =: col ]
+    result <- exec db $
+        findAndModify counterC
+            [ "_id" =: col ]                        -- query
+            [ "$inc" =: ["current" =: (1 :: Int)] ] -- update
+            True                                    -- new
+            True                                    -- upsert
+    let v = at "value" result :: Document
+    return $ (at "current" v :: Int)
 
 mongoInsert :: Applicative m => MonadIO m => MongoType a => Database -> Collection -> a -> m String
 mongoInsert db col elem = do
     result <- exec db $ insert col $ toDoc elem
     case result of
       ObjId id -> return $ show id
-      _        -> fail "unexpected id"
+      _        -> fail "invalid '_id' (expected ObjectId)"
 
-mongoInsertIntId :: Applicative m => MonadIO m => MongoType a => Database -> Collection -> a -> m String
+mongoInsertIntId :: Applicative m => MonadIO m => MongoType a => Database -> Collection -> a -> m a
 mongoInsertIntId db col elem = do
     result <- exec db $ insert col $ toDoc elem
     case result of
-      Int32 id -> return $ show id
-      _        -> fail "unexpected id"
+      Int32 _ -> return elem
+      _        -> fail "invalid '_id' (expected Integer)"
