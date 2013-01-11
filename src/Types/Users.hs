@@ -76,12 +76,19 @@ validateUser :: User -> Either String Bool
 validateUser u =
     ensure "invalid firstname given" (validName $ firstName u) True >>=
     ensure "invalid lastname given" (validName $ lastName u) >>=
-    ensure "invalid communication details given" (validateDetails $ commDetails u)
+    ensure "invalid communication details given" (validateDetails $ commDetails u) >>=
+    ensure "invalid addresses given" (validAddresses $ addresses u)
+
     where
       validName [] = False
       validName (x:_)
         | isDigit x = False
         | otherwise = True
+
+      validAddresses [] = True
+      validAddresses as = primaryAddresses as == 1
+
+      primaryAddresses = length . filter (\a -> isPrimary a)
 
 getUserById :: MonadIO m => Int -> m (Maybe User)
 getUserById uid =
