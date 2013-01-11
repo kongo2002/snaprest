@@ -23,9 +23,7 @@ main = quickHttpServe site
 site :: Snap ()
 site =
     ifTop (writeBS "snaprest - REST web services (testing project)") <|>
-    route [ ("foo",              writeBS "bar")
-          , ("status",           getStatus)
-          , ("echo/:echoparam",  echoHandler)
+    route [ ("status",           getStatus)
           , ("ping/:countparam", pingHandler)
           , ("users/user/:id",   getUserHandler)
           , ("users/user",       putUserHandler)
@@ -36,12 +34,6 @@ getStatus :: Snap ()
 getStatus =
     let output = "snaprest running\n\nversion: " ++ version
     in writeBS $ BS.pack output
-
-echoHandler :: Snap ()
-echoHandler = do
-    param <- getParam "echoparam"
-    maybe (writeBS "must specify echo/param in URL")
-          writeBS param
 
 pingHandler :: Snap ()
 pingHandler = do
