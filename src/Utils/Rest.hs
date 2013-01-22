@@ -2,13 +2,24 @@
 
 module Utils.Rest where
 
-import           Prelude hiding (id, elem)
-import           Data.Int
+import           Prelude hiding      ( id, elem, lookup )
+import           Control.Applicative ( (<$>), (<*>) )
 import           Data.Aeson
 import qualified Data.ByteString.Char8 as BS
+import           Data.Int
+import           Data.Maybe          ( fromMaybe )
+import           Data.Map            ( lookup )
 import           Snap.Core
 
 import           Utils.Http
+
+data PagingInfo = PagingInfo
+    { piPageSize :: Int
+    , piPage :: Int
+    } deriving (Show, Eq)
+
+defaultPageSize :: Int
+defaultPageSize = 50
 
 maximumBodyLength :: Int64
 maximumBodyLength = 100000
@@ -32,6 +43,37 @@ getSomeStr name func = method GET $ do
 
 getSomeStrKey :: (String -> Snap ()) -> Snap ()
 getSomeStrKey = getSomeStr "key"
+
+getPagingParams :: Request -> Maybe PagingInfo
+getPagingParams req =
+    PagingInfo <$>
+        getDef defaultPageSize "pageSize" <*>
+        get "page"
+    where
+      pars = rqQueryParams req
+      get name = case lookup (BS.pack name) pars of
+        Just p  -> readFirstIntMaybe p
+        Nothing -> Nothing
+      getDef def name = case lookup (BS.pack name) pars of
+        Just p  -> Just $ fromMaybe def (readFirstIntMaybe p)
+        Nothing -> Just $ def
+
+filterPaging :: PagingInfo -> [a] -> [a]
+filterPaging pinfo =
+    take count . drop toSkip
+    where
+      count = piPageSize pinfo
+      toSkip = count * (piPage pinfo)
+
+getPagingResult :: ToJSON d => Snap ([d]) -> Snap ()
+getPagingResult func = method GET $ do
+    elements <- func
+    req <- getRequest
+    let filtered = case getPagingParams req of
+            Just info -> filterPaging info elements
+            Nothing   -> elements
+    modifyResponse $ setToJson
+    writeLBS $ encode $ filtered
 
 jsonGetId :: ToJSON d => (Int -> Snap (Maybe d)) -> Snap ()
 jsonGetId func = getSomeIntId $ \id -> do
