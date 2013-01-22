@@ -1,20 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Types.Users
     (
       User(..)
     , MongoType
+    , getUsers
     , getUserById
     , putUser
     , validateUser
     ) where
 
-import Prelude hiding ( id, lookup )
-import Control.Monad ( mzero )
-import Control.Applicative ( (<$>), (<*>), Applicative )
-import Control.Monad.IO.Class ( MonadIO, liftIO )
+import Prelude hiding              ( id, lookup )
+import Control.Monad               ( mzero )
+import Control.Applicative         ( (<$>), (<*>), Applicative )
+import Control.Monad.IO.Class      ( MonadIO, liftIO )
+import Control.Monad.Trans.Control ( MonadBaseControl )
 
 import Data.Aeson
 import Data.Bson hiding (value)
@@ -95,6 +98,10 @@ getUserById uid =
     mongoFindOne userDb query
     where
       query = select ["_id" =: uid] userCollection
+
+getUsers :: MonadIO m => MonadBaseControl IO m => m [User]
+getUsers =
+    mongoFind userDb (select [] userCollection)
 
 putUser :: MonadIO m => Applicative m => User -> m User
 putUser u = do

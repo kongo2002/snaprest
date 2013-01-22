@@ -2,7 +2,8 @@
 
 module Main where
 
-import           Control.Applicative ((<|>))
+import           Control.Applicative    ( (<|>) )
+import           Control.Monad.IO.Class ( MonadIO, liftIO )
 
 import           Snap.Core
 import           Snap.Util.FileServe
@@ -27,6 +28,7 @@ site =
           , ("ping/:countparam", pingHandler)
           , ("users/user/:id",   getUserHandler)
           , ("users/user",       putUserHandler)
+          , ("users",            getUsersHandler)
           ] <|>
     dir "static" (serveDirectory ".")
 
@@ -39,6 +41,9 @@ pingHandler :: Snap ()
 pingHandler = do
     count <- getIntParamDef "countparam" 10
     writeBS $ BS.pack $ replicate count '*'
+
+getUsersHandler :: Snap()
+getUsersHandler = getPagingResult $ liftIO getUsers
 
 getUserHandler :: Snap ()
 getUserHandler = jsonGetId $ getUserById

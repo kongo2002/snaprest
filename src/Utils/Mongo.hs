@@ -1,18 +1,22 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Utils.Mongo
     (
       MongoType(..)
+    , mongoFind
     , mongoFindOne
     , mongoInsert
     , mongoInsertIntId
     , mongoGetId
     ) where
 
-import Prelude hiding         ( id, elem )
+import Prelude hiding              ( id, elem )
 import Control.Applicative
-import Control.Monad          ( (>=>) )
-import Control.Monad.IO.Class ( MonadIO, liftIO )
+import Control.Monad               ( (>=>) )
+import Control.Monad.IO.Class      ( MonadIO, liftIO )
+import Control.Monad.Trans.Control ( MonadBaseControl )
+import Data.Maybe                  ( catMaybes )
 
 import Database.MongoDB
 
@@ -45,6 +49,11 @@ mongoFindOne :: MonadIO m => MongoType t => Database -> Query -> m (Maybe t)
 mongoFindOne db query = do
     doc <- exec db $ findOne query
     return (doc >>= (fromDoc >=> Just))
+
+mongoFind :: MonadIO m => MonadBaseControl IO m => MongoType t => Database -> Query -> m [t]
+mongoFind db query = do
+    docs <- exec db $ find query >>= rest
+    return (catMaybes $ map fromDoc docs)
 
 mongoGetId :: MonadIO m => Applicative m => Database -> Collection -> m Int
 mongoGetId db col = do
