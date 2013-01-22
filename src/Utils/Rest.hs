@@ -29,6 +29,9 @@ defaultPageSize = 50
 maximumBodyLength :: Int64
 maximumBodyLength = 100000
 
+
+------------------------------------------------------------------------------
+-- | Execute the given function based on a specified identifier integer
 getSomeInt :: BS.ByteString -> (Int -> Snap ()) -> Snap ()
 getSomeInt name func = method GET $ do
     idParam <- getIntParam name
@@ -36,9 +39,15 @@ getSomeInt name func = method GET $ do
       Just id -> func id
       Nothing -> notFound
 
+
+------------------------------------------------------------------------------
+-- | Execute the given function based on a 'id' integer identifier
 getSomeIntId :: (Int -> Snap ()) -> Snap ()
 getSomeIntId = getSomeInt "id"
 
+
+------------------------------------------------------------------------------
+-- | Execute the given function based on a specified identifier string
 getSomeStr :: BS.ByteString -> (String -> Snap ()) -> Snap ()
 getSomeStr name func = method GET $ do
     keyParam <- getParam name
@@ -46,24 +55,34 @@ getSomeStr name func = method GET $ do
       Just key -> func $ BS.unpack key
       Nothing  -> notFound
 
+
+------------------------------------------------------------------------------
+-- | Execute the given function based on a 'key' string identifier
 getSomeStrKey :: (String -> Snap ()) -> Snap ()
 getSomeStrKey = getSomeStr "key"
 
+
+------------------------------------------------------------------------------
+-- | Try to retrieve PagingInfo from the given Request
 getPagingParams :: Request -> Maybe PagingInfo
 getPagingParams req =
     PagingInfo <$>
         getDef defaultPageSize "pagesize" <*>
         get "page"
     where
-      get name = case queryParamCaseIn name req of
+      get name = case queryParamCI name req of
         Just p  -> readFirstIntMaybe p
         Nothing -> Nothing
-      getDef def name = case queryParamCaseIn name req of
+      getDef def name = case queryParamCI name req of
         Just p  -> Just $ fromMaybe def (readFirstIntMaybe p)
         Nothing -> Just $ def
 
-queryParamCaseIn :: BS.ByteString -> Request -> Maybe [BS.ByteString]
-queryParamCaseIn name rq =
+
+------------------------------------------------------------------------------
+-- | Retrieve a list of query parameters with a specified name while
+-- matching case insensitive
+queryParamCI :: BS.ByteString -> Request -> Maybe [BS.ByteString]
+queryParamCI name rq =
     case find comp lst of
         Just (_, v) -> Just v
         Nothing     -> Nothing
@@ -71,6 +90,9 @@ queryParamCaseIn name rq =
       lst = M.toList $ rqQueryParams rq
       comp kv = name == (B.map toLower $ fst kv)
 
+
+------------------------------------------------------------------------------
+-- | Lowercase convert the given bytestring word
 toLower :: Word8 -> Word8
 toLower w
     |  65 <= w && w <=  90 ||
@@ -78,6 +100,9 @@ toLower w
       216 <= w && w <= 222 = w + 32
     | otherwise            = w
 
+
+------------------------------------------------------------------------------
+-- | Reduce the given result list based on the specified PagingResult
 filterPaging :: PagingInfo -> [a] -> [a]
 filterPaging pinfo =
     take count . drop toSkip
@@ -86,6 +111,10 @@ filterPaging pinfo =
       count = use $ piPageSize pinfo
       toSkip = use $ count * (piPage pinfo)
 
+
+------------------------------------------------------------------------------
+-- | Process the result of the given function with optional PagingResult
+-- information
 getPagingResult :: ToJSON d => Snap ([d]) -> Snap ()
 getPagingResult func = method GET $ do
     elements <- func
@@ -95,6 +124,9 @@ getPagingResult func = method GET $ do
             Nothing   -> elements
     jsonResponse filtered
 
+
+------------------------------------------------------------------------------
+-- | Helper function to process a GET request for a specified ID
 jsonGetId :: ToJSON d => (Int -> Snap (Maybe d)) -> Snap ()
 jsonGetId func = getSomeIntId $ \id -> do
     maybeFound <- func id
@@ -102,6 +134,9 @@ jsonGetId func = getSomeIntId $ \id -> do
       Just elem -> jsonResponse elem
       Nothing   -> writeErrorJson $ "ID " ++ show id ++ " not found"
 
+
+------------------------------------------------------------------------------
+-- | Helper function to process a PUT request
 jsonPut :: FromJSON d => (d -> Snap ()) -> Snap ()
 jsonPut func = method PUT $ do
     body <- readRequestBody maximumBodyLength
