@@ -46,6 +46,7 @@ getSomeStrKey = getSomeStr "key"
 
 getPagingParams :: Request -> Maybe PagingInfo
 getPagingParams req =
+    -- TODO: case insensitive query parameter matching
     PagingInfo <$>
         getDef defaultPageSize "pageSize" <*>
         get "page"
