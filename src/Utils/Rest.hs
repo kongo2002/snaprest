@@ -74,16 +74,13 @@ getPagingResult func = method GET $ do
     let filtered = case getPagingParams req of
             Just info -> filterPaging info elements
             Nothing   -> elements
-    modifyResponse $ setToJson
-    writeLBS $ encode $ filtered
+    jsonResponse filtered
 
 jsonGetId :: ToJSON d => (Int -> Snap (Maybe d)) -> Snap ()
 jsonGetId func = getSomeIntId $ \id -> do
     maybeFound <- func id
     case maybeFound of
-      Just elem -> do
-        modifyResponse $ setToJson
-        writeLBS $ encode $ elem
+      Just elem -> jsonResponse elem
       Nothing   -> writeErrorJson $ "ID " ++ show id ++ " not found"
 
 jsonPut :: FromJSON d => (d -> Snap ()) -> Snap ()

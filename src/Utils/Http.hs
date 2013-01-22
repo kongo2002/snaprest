@@ -7,6 +7,7 @@ import           Data.Aeson
 import           Data.Maybe (fromMaybe, mapMaybe)
 
 import qualified Data.ByteString.Char8 as BS
+import qualified Data.ByteString.Lazy.Char8 as LBS
 
 import           Data.ByteString.Lex.Double (readDouble)
 
@@ -85,7 +86,8 @@ setToJson = setContentType $ BS.pack "application/json; charset=utf-8"
 jsonResponse :: ToJSON a => a -> Snap ()
 jsonResponse element = do
     modifyResponse setToJson
-    writeLBS $ encode element
+    let elemJson = encode element
+    writeLBS $ "{\"data\":" `LBS.append` elemJson `LBS.append` ",\"success\":true}"
 
 writeErrorResponse :: Int -> String -> Snap ()
 writeErrorResponse code msg = do
