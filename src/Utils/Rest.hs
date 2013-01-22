@@ -2,13 +2,18 @@
 
 module Utils.Rest where
 
-import           Prelude hiding      ( id, elem, lookup )
-import           Control.Applicative ( (<$>), (<*>) )
+import           Prelude hiding       ( id, elem, lookup )
+import           Control.Applicative  ( (<$>), (<*>) )
+
 import           Data.Aeson
+import qualified Data.ByteString as B ( map )
 import qualified Data.ByteString.Char8 as BS
 import           Data.Int
-import           Data.Maybe          ( fromMaybe )
-import           Data.Map            ( lookup )
+import           Data.List            ( find )
+import           Data.Maybe           ( fromMaybe )
+import qualified Data.Map as M
+import           Data.Word            ( Word8 )
+
 import           Snap.Core
 
 import           Utils.Http
@@ -46,18 +51,32 @@ getSomeStrKey = getSomeStr "key"
 
 getPagingParams :: Request -> Maybe PagingInfo
 getPagingParams req =
-    -- TODO: case insensitive query parameter matching
     PagingInfo <$>
-        getDef defaultPageSize "pageSize" <*>
+        getDef defaultPageSize "pagesize" <*>
         get "page"
     where
-      pars = rqQueryParams req
-      get name = case lookup (BS.pack name) pars of
+      get name = case queryParamCaseIn name req of
         Just p  -> readFirstIntMaybe p
         Nothing -> Nothing
-      getDef def name = case lookup (BS.pack name) pars of
+      getDef def name = case queryParamCaseIn name req of
         Just p  -> Just $ fromMaybe def (readFirstIntMaybe p)
         Nothing -> Just $ def
+
+queryParamCaseIn :: BS.ByteString -> Request -> Maybe [BS.ByteString]
+queryParamCaseIn name rq =
+    case find comp lst of
+        Just (_, v) -> Just v
+        Nothing     -> Nothing
+    where
+      lst = M.toList $ rqQueryParams rq
+      comp kv = name == (B.map toLower $ fst kv)
+
+toLower :: Word8 -> Word8
+toLower w
+    |  65 <= w && w <=  90 ||
+      192 <= w && w <= 214 ||
+      216 <= w && w <= 222 = w + 32
+    | otherwise            = w
 
 filterPaging :: PagingInfo -> [a] -> [a]
 filterPaging pinfo =
