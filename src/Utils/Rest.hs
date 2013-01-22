@@ -62,8 +62,9 @@ filterPaging :: PagingInfo -> [a] -> [a]
 filterPaging pinfo =
     take count . drop toSkip
     where
-      count = piPageSize pinfo
-      toSkip = count * (piPage pinfo)
+      use = max (0 :: Int)
+      count = use $ piPageSize pinfo
+      toSkip = use $ count * (piPage pinfo)
 
 getPagingResult :: ToJSON d => Snap ([d]) -> Snap ()
 getPagingResult func = method GET $ do
