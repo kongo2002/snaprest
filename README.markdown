@@ -50,5 +50,8 @@ Prelude> :l Main
 Listening on http://0.0.0.0:8000/
 ~~~
 
+The running server can then be stopped with `Ctrl-C`, recompiled with `:r` and
+started with `main`.
+
 [snap]: http://snapframework.com/
 [mongo]: http://www.mongodb.org/
