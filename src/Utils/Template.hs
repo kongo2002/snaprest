@@ -2,8 +2,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Utils.Template
-    (
-      toJSONFunc
+    ( toJSONFunc
     , fromJSONFunc
     , toVal
     , fromVal
@@ -25,6 +24,8 @@ import           Text.Show      ( show )
 
 import           Language.Haskell.TH
 
+------------------------------------------------------------------------------
+-- | Remove any leading underscore or uppercase letters
 sanitizeField :: String -> String
 sanitizeField [] = []
 sanitizeField str@(x:xs)
@@ -32,12 +33,21 @@ sanitizeField str@(x:xs)
     | isUpper x = toLower x : xs
     | True      = str
 
+
 fieldL :: (String -> String) -> Name -> Lit
 fieldL conv = stringL . conv . nameBase
+
 
 fieldExpr :: (String -> String) -> Name -> ExpQ
 fieldExpr conv = litE . fieldL conv
 
+
+errF :: String -> a
+errF msg = error $ "Utils.Template: " ++ msg
+
+------------------------------------------------------------------------------
+-- | Utility function to execute a function based on its contructors by a
+-- specified type name
 useType :: Name -> ([TyVarBndr] -> [Con] -> Q Exp) -> Q Exp
 useType name func = do
     info <- reify name
@@ -45,17 +55,31 @@ useType name func = do
       TyConI decl ->
         case decl of
           DataD _ _ tvbs ctors _ -> func tvbs ctors
-          other -> error $ "Utils.Template: Unsupported type: " ++ show other
-      _ -> error "Utils.Template: No type name found"
+          other -> errF $ "Unsupported type: " ++ show other
+      _ -> errF "No type name found"
 
+
+------------------------------------------------------------------------------
+-- | Build a `toJSON` instance function for the type with the specified
+-- name
 toJSONFunc :: Name -> Q Exp
 toJSONFunc name =
     useType name (\_ ctors -> ctorLambda buildJsonArgs sanitizeField ctors)
 
+
+------------------------------------------------------------------------------
+-- | Build a `fromJSON` instance function for the type with the specified
+-- name
 fromJSONFunc :: Name -> Q Exp
 fromJSONFunc = mkParseJSON id
 
-ctorLambda :: ((String -> String) -> Con -> MatchQ) -> (String -> String) -> [Con] -> ExpQ
+
+------------------------------------------------------------------------------
+-- | Build a lambda expression to be used for a constructor function
+ctorLambda :: ((String -> String) -> Con -> MatchQ)
+           -> (String -> String)
+           -> [Con]
+           -> ExpQ
 ctorLambda exprFunc nameConv ctors = do
     value <- newName "value"
     lam1E (varP value) $
@@ -64,34 +88,45 @@ ctorLambda exprFunc nameConv ctors = do
               | ctor <- ctors
               ]
 
+
+------------------------------------------------------------------------------
+-- | Inner function to be used for the `toVal` expression
 toVal :: Name -> Q Exp
 toVal name =
     useType name (\_ ctors -> ctorLambda buildToValArgs sanitizeField ctors)
 
+
+------------------------------------------------------------------------------
+-- | Inner function to be used for the `fromVal` expression
 fromVal :: Name -> Q Exp
 fromVal name =
-    useType name (\_ ctors -> do
+    useType name (\_ cs -> do
         value <- newName "value"
         lam1E (varP value) $
             caseE (varE value)
-                  ([buildFromValArgs sanitizeField ctor | ctor <- ctors] ++ [wildcardMatch]))
+                  ([buildFromValArgs sanitizeField c | c <- cs] ++ [wildcard]))
+    where
+      wildcard = do
+          match wildP (normalB [e|Nothing|]) []
 
-wildcardMatch :: MatchQ
-wildcardMatch = do
-    match wildP (normalB [e|Nothing|]) []
 
-stringValue :: (String -> String) -> Name -> ExpQ
-stringValue nameConv ctor =
-    [e|B.String|] `appE` ([e|T.pack|] `appE` (fieldExpr nameConv $ ctor))
-
+------------------------------------------------------------------------------
+-- | Build match expressions for the `toVal` function
 buildToValArgs :: (String -> String) -> Con -> MatchQ
 buildToValArgs nameConv (NormalC ctor []) = do
     match (conP ctor [])
-          (normalB $ stringValue nameConv ctor)
+          (normalB $ stringV)
           []
+    where
+      stringV =
+          [e|B.String|] `appE` ([e|T.pack|] `appE` (fieldExpr nameConv $ ctor))
 
-buildToValArgs _ _ = error "Utils.Template: specified constructor type is not supported yet"
 
+buildToValArgs _ _ = errF "Specified constructor type is not supported yet"
+
+
+------------------------------------------------------------------------------
+-- | Build match expressions for the `fromVal` function
 buildFromValArgs :: (String -> String) -> Con -> MatchQ
 buildFromValArgs nameConv (NormalC ctor []) = do
     match (conP strName [litP $ fieldL nameConv ctor])
@@ -100,8 +135,12 @@ buildFromValArgs nameConv (NormalC ctor []) = do
     where
       strName = mkName "String"
 
-buildFromValArgs _ _ = error "Utils.Template: specified constructor type is not supported yet"
+buildFromValArgs _ _ = errF "Specified constructor type is not supported yet"
 
+
+------------------------------------------------------------------------------
+-- | Build match expressions for the JSON function `toJSON` and `fromJSON`
+-- functions
 buildJsonArgs :: (String -> String) -> Con -> MatchQ
 buildJsonArgs nameConv (RecC ctorName types) = do
     -- get argument names
@@ -126,13 +165,17 @@ buildJsonArgs _ (NormalC ctor types) = do
     args <- mapM newName ["arg" ++ show n | n <- [1..len]]
     field <- case [ [e|toJSON|] `appE` varE arg | arg <- args ] of
                 [expr] -> return expr
-                _      -> error "Utils.Template: multiple constructor arguments are not supported yet"
+                _      -> errF "Multiple constructor arguments are not supported yet"
     match (conP ctor $ map varP args)
           (normalB field)
           []
 
-buildJsonArgs _ _ = error "Utils.Template: constructor type is not supported yet"
+buildJsonArgs _ _ = errF "Constructor type is not supported yet"
 
+
+------------------------------------------------------------------------------
+-- | Convert the given field to an appropriate expression for the JSON
+-- function
 fieldToJsonExpr :: (String -> String) -> Name -> Name -> Type -> ExpQ
 fieldToJsonExpr nameConv arg fname ty =
     case ty of
