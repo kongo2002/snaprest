@@ -1,5 +1,5 @@
 .ghci
-/cabal-dev
+cabal-dev
 dist
 log
 tags
