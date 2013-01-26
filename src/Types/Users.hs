@@ -8,6 +8,7 @@ module Types.Users
     , MongoType
     , getUsers
     , getUserById
+    , getPrimaryEmail
     , existsUserWithEmail
     , putUser
     , validateUser
@@ -23,8 +24,9 @@ import Data.Aeson
 import Data.Bson hiding            ( value )
 import Data.Char                   ( isDigit )
 import Data.Data
+import Data.List                   ( find )
 import Data.Text                   ( Text )
-import Database.MongoDB hiding     ( value )
+import Database.MongoDB hiding     ( value, find )
 
 import Types.Address
 import Types.CommDetail
@@ -107,6 +109,17 @@ validateUser u =
       validAddresses as = primaryAddresses as == 1
 
       primaryAddresses = length . filter (\a -> isPrimary a)
+
+
+------------------------------------------------------------------------------
+-- | Get the primary or only email address of the @User@
+getPrimaryEmail :: User -> Maybe String
+getPrimaryEmail user =
+    cdValue <$> getPrimary (commDetails user)
+    where
+      getPrimary []  = Nothing
+      getPrimary [c] = Just c
+      getPrimary cds = find (\c -> cdType c == Email && cdPrim c) cds
 
 
 ------------------------------------------------------------------------------
