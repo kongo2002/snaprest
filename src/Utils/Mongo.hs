@@ -5,6 +5,7 @@ module Utils.Mongo
     ( MongoType(..)
     , mongoFind
     , mongoFindOne
+    , mongoExists
     , mongoInsert
     , mongoInsertIntId
     , mongoGetId
@@ -15,7 +16,7 @@ import Control.Applicative
 import Control.Monad               ( (>=>) )
 import Control.Monad.IO.Class      ( MonadIO, liftIO )
 import Control.Monad.Trans.Control ( MonadBaseControl )
-import Data.Maybe                  ( catMaybes )
+import Data.Maybe                  ( catMaybes, isJust )
 import Network.Socket              ( HostName )
 
 import Database.MongoDB
@@ -69,6 +70,14 @@ mongoFindOne :: MonadIO m => MongoType t => Database -> Query -> m (Maybe t)
 mongoFindOne db query = do
     doc <- exec db $ findOne query
     return (doc >>= (fromDoc >=> Just))
+
+
+------------------------------------------------------------------------------
+-- | Helper function to test if a document exists for the specified query
+mongoExists :: MonadIO m => Database -> Query -> m Bool
+mongoExists db query = do
+    doc <- exec db $ findOne query
+    return $ isJust doc
 
 
 ------------------------------------------------------------------------------

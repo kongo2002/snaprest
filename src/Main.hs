@@ -66,12 +66,17 @@ getUserHandler = jsonGetId $ getUserById
 
 
 ------------------------------------------------------------------------------
--- | Handler to add a new new user
+-- | Handler to add a new user
 putUserHandler :: Snap ()
 putUserHandler =
     jsonPut $ \user ->
         case validateUser user of
             Left err -> writeErrorJson err
             Right _  -> do
-                u <- putUser user
-                jsonResponse u
+                let email = "todo"
+                exists <- existsUserWithEmail email
+                case exists of
+                    False -> do
+                        u <- putUser user
+                        jsonResponse u
+                    True -> writeErrorJson $ "User with email '" ++ email ++ "' already exists"

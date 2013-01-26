@@ -4,11 +4,11 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 module Types.Users
-    (
-      User(..)
+    ( User(..)
     , MongoType
     , getUsers
     , getUserById
+    , existsUserWithEmail
     , putUser
     , validateUser
     ) where
@@ -20,11 +20,11 @@ import Control.Monad.IO.Class      ( MonadIO, liftIO )
 import Control.Monad.Trans.Control ( MonadBaseControl )
 
 import Data.Aeson
-import Data.Bson hiding (value)
-import Data.Char (isDigit)
+import Data.Bson hiding            ( value )
+import Data.Char                   ( isDigit )
 import Data.Data
-import Data.Text (Text)
-import Database.MongoDB hiding (value)
+import Data.Text                   ( Text )
+import Database.MongoDB hiding     ( value )
 
 import Types.Address
 import Types.CommDetail
@@ -98,6 +98,14 @@ getUserById uid =
     mongoFindOne userDb query
     where
       query = select ["_id" =: uid] userCollection
+
+existsUserWithEmail :: MonadIO m => String -> m Bool
+existsUserWithEmail email =
+    mongoExists userDb query
+    where
+      cd = ["type" =: ("email"::String), "val" =: email]
+      em = ["$elemMatch" =: cd]
+      query = select ["cdetails" =: em] userCollection
 
 getUsers :: MonadIO m => MonadBaseControl IO m => m [User]
 getUsers =
