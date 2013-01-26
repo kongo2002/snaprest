@@ -71,7 +71,7 @@ putUserHandler :: Snap ()
 putUserHandler =
     jsonPut $ \user ->
         let user' = setDefaultUserDetails user
-        in case validateUser user of
+        in case validateUser user' of
             Left err -> writeErrorJson err
             Right _  -> do
                 exists <- emailExists
