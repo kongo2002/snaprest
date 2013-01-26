@@ -10,7 +10,7 @@ module Types.Users
     , getUserById
     , getPrimaryEmail
     , existsUserWithEmail
-    , setDefaultUserDetails
+    , prepareUser
     , putUser
     , validateUser
     ) where
@@ -114,8 +114,8 @@ validateUser u =
 
 ------------------------------------------------------------------------------
 -- | Set the default communication details and addresses of the given user
-setDefaultUserDetails :: User -> User
-setDefaultUserDetails user =
+prepareUser :: User -> User
+prepareUser user =
     user { addresses = defAddr $ addresses user
          , commDetails = defCds $ commDetails user }
     where

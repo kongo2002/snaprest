@@ -70,7 +70,7 @@ getUserHandler = jsonGetId $ getUserById
 putUserHandler :: Snap ()
 putUserHandler =
     jsonPut $ \user ->
-        let user' = setDefaultUserDetails user
+        let user' = prepareUser user
         in case validateUser user' of
             Left err -> writeErrorJson err
             Right _  -> do
