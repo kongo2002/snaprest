@@ -10,6 +10,7 @@ module Types.Users
     , getUserById
     , getPrimaryEmail
     , existsUserWithEmail
+    , setDefaultUserDetails
     , putUser
     , validateUser
     ) where
@@ -109,6 +110,20 @@ validateUser u =
       validAddresses as = primaryAddresses as == 1
 
       primaryAddresses = length . filter (\a -> isPrimary a)
+
+
+------------------------------------------------------------------------------
+-- | Set the default communication details and addresses of the given user
+setDefaultUserDetails :: User -> User
+setDefaultUserDetails user =
+    user { addresses = defAddr $ addresses user
+         , commDetails = defCds $ commDetails user }
+    where
+      defAddr [a] = [a {isPrimary = True}]
+      defAddr as  = as
+
+      defCds [c] = [c {cdPrim = True}]
+      defCds cs  = cs
 
 
 ------------------------------------------------------------------------------

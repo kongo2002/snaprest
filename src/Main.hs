@@ -70,19 +70,20 @@ getUserHandler = jsonGetId $ getUserById
 putUserHandler :: Snap ()
 putUserHandler =
     jsonPut $ \user ->
-        case validateUser user of
+        let user' = setDefaultUserDetails user
+        in case validateUser user of
             Left err -> writeErrorJson err
             Right _  -> do
                 exists <- emailExists
                 case exists of
                     (False, _) -> do
-                        u <- putUser user
+                        u <- putUser user'
                         jsonResponse u
                     (True, email) ->
                         writeErrorJson $ "User with email '" ++ email ++ "' already exists"
                 where
                   emailExists = do
-                    case getPrimaryEmail user of
+                    case getPrimaryEmail user' of
                       Just email -> do
                         ex <- existsUserWithEmail email
                         return (ex, email)
