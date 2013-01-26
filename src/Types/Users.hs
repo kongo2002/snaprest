@@ -33,6 +33,9 @@ import Utils.Mongo
 import Utils.Template
 import Utils.Validation
 
+
+------------------------------------------------------------------------------
+-- | Record to hold user information
 data User = User
     {
       id :: Int
@@ -42,6 +45,9 @@ data User = User
     , addresses :: [Address]
     } deriving (Data, Typeable, Show, Eq)
 
+
+------------------------------------------------------------------------------
+-- | JSON deserialization function for @User@
 instance FromJSON User where
     parseJSON (Object v) = User <$>
         v .:? "id" .!= 0 <*>
@@ -51,9 +57,15 @@ instance FromJSON User where
         v .:? "addresses" .!= []
     parseJSON _ = mzero
 
+
+------------------------------------------------------------------------------
+-- | JSON serialization function for @User@
 instance ToJSON User where
     toJSON = $(toJSONFunc ''User)
 
+
+------------------------------------------------------------------------------
+-- | BSON conversion instance implementation of @User@
 instance MongoType User where
     toDoc x = [
         "_id" =: id x,
@@ -75,6 +87,9 @@ userDb = "test"
 userCollection :: Text
 userCollection = "Users"
 
+
+------------------------------------------------------------------------------
+-- | User validation function
 validateUser :: User -> Either String Bool
 validateUser u =
     ensure "invalid firstname given" (validName $ firstName u) True >>=
@@ -93,12 +108,18 @@ validateUser u =
 
       primaryAddresses = length . filter (\a -> isPrimary a)
 
+
+------------------------------------------------------------------------------
+-- | Try to find a @User@ with the specified integer ID
 getUserById :: MonadIO m => Int -> m (Maybe User)
 getUserById uid =
     mongoFindOne userDb query
     where
       query = select ["_id" =: uid] userCollection
 
+
+------------------------------------------------------------------------------
+-- | Test if a @User@ with the specified email address already exists
 existsUserWithEmail :: MonadIO m => String -> m Bool
 existsUserWithEmail email =
     mongoExists userDb query
@@ -107,10 +128,16 @@ existsUserWithEmail email =
       em = ["$elemMatch" =: cd]
       query = select ["cdetails" =: em] userCollection
 
+
+------------------------------------------------------------------------------
+-- | Get all Users stored in the database
 getUsers :: MonadIO m => MonadBaseControl IO m => m [User]
 getUsers =
     mongoFind userDb (select [] userCollection)
 
+
+------------------------------------------------------------------------------
+-- | Add a new @User@ to the database
 putUser :: MonadIO m => Applicative m => User -> m User
 putUser u = do
     -- retrieve new user ID
