@@ -73,7 +73,7 @@ putUserHandler =
         case validateUser user of
             Left err -> writeErrorJson err
             Right _  -> do
-                exists <- emailExists user
+                exists <- emailExists
                 case exists of
                     (False, _) -> do
                         u <- putUser user
@@ -81,8 +81,8 @@ putUserHandler =
                     (True, email) ->
                         writeErrorJson $ "User with email '" ++ email ++ "' already exists"
                 where
-                  emailExists u = do
-                    case getPrimaryEmail u of
+                  emailExists = do
+                    case getPrimaryEmail user of
                       Just email -> do
                         ex <- existsUserWithEmail email
                         return (ex, email)
