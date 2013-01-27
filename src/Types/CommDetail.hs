@@ -52,7 +52,7 @@ data CommDetail = CommDetail
 instance FromJSON CommDetail where
     parseJSON (Object v) = CommDetail
         <$> liftM parseType (v .: "type")
-        <*> v .: "val"
+        <*> v .: "value"
         <*> v .:? "isPrimary" .!= False
     parseJSON _          = mzero
 
@@ -69,7 +69,7 @@ instance ToJSON CommDetail where
     toJSON (CommDetail t v ip) =
         object [
               "type" .= (getType t)
-            , "val" .= v
+            , "value" .= v
             , "isPrimary" .= ip]
         where getType :: CommType -> Text
               getType Email = "email"
