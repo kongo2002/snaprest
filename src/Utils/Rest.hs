@@ -9,7 +9,7 @@ import           Data.Aeson
 import qualified Data.ByteString as B ( map )
 import qualified Data.ByteString.Char8 as BS
 import           Data.Int
-import           Data.List            ( find )
+import           Data.List            ( find, intercalate )
 import           Data.Maybe           ( fromMaybe )
 import qualified Data.Map as M
 import           Data.Word            ( Word8 )
@@ -104,6 +104,24 @@ toLower w
 
 
 ------------------------------------------------------------------------------
+-- | Build the pagination @Link@ header string
+buildLinkHeader :: PagingInfo -> String -> String
+buildLinkHeader pinfo url =
+    -- TODO: operate on bytestrings instead
+    intercalate ", " $ filter (not . null) $ [getNext, getPrev]
+    where
+      page = piPage pinfo
+      size = piPageSize pinfo
+      make p rel =
+        "<" ++ url ++ "?page=" ++ (show p) ++ "&pagesize=" ++ (show size) ++
+            ">; rel=\"" ++ rel ++ "\""
+      getNext = make (page+1) "next"
+      getPrev
+        | page > 0  = make (page-1) "prev"
+        | otherwise = []
+
+
+------------------------------------------------------------------------------
 -- | Reduce the given result list based on the specified PagingResult
 filterPaging :: PagingInfo -> [a] -> [a]
 filterPaging pinfo =
@@ -119,13 +137,17 @@ filterPaging pinfo =
 -- information
 getPagingResult :: ToJSON d => Snap ([d]) -> Snap ()
 getPagingResult func = method GET $ do
-    -- TODO: implement paging via mongo $skip and $limit
     elements <- func
     req <- getRequest
-    let filtered = case getPagingParams req of
-            Just info -> filterPaging info elements
-            Nothing   -> elements
-    jsonResponse filtered
+    case getPagingParams req of
+        Just info -> do
+            -- TODO: build full URI
+            let base = BS.unpack $ rqContextPath req
+            let link = BS.pack $ buildLinkHeader info base
+            modifyResponse $ setHeader "Link" link
+            jsonResponse $ filterPaging info elements
+        Nothing   ->
+            jsonResponse elements
 
 
 ------------------------------------------------------------------------------
