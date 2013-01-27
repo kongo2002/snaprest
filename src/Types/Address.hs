@@ -17,6 +17,9 @@ import Utils.Bson
 import Utils.Mongo
 import Utils.Template
 
+
+------------------------------------------------------------------------------
+-- | Record holding address information
 data Address = Address
     {
       street1 :: String
@@ -28,6 +31,9 @@ data Address = Address
     , isPrimary :: Bool
     } deriving (Typeable, Data, Show, Eq)
 
+
+------------------------------------------------------------------------------
+-- | JSON address deserialization function
 instance FromJSON Address where
     parseJSON (Object v) = Address <$>
         v .: "street1" <*>
@@ -39,9 +45,15 @@ instance FromJSON Address where
         v .:? "isPrimary" .!= False
     parseJSON _ = mzero
 
+
+------------------------------------------------------------------------------
+-- | JSON address serialization function
 instance ToJSON Address where
     toJSON = $(toJSONFunc ''Address)
 
+
+------------------------------------------------------------------------------
+-- | Mongo conversion function
 instance MongoType Address where
     toDoc x = catMaybes [
         Just ("str1" =: street1 x),
@@ -59,4 +71,3 @@ instance MongoType Address where
         <*> getMaybe "city" x
         <*> getMaybe "country" x
         <*> lookup "prim" x
-

@@ -17,16 +17,28 @@ import Data.List (groupBy)
 import Utils.Mongo
 import Utils.Template
 
+
+------------------------------------------------------------------------------
+-- | Communication types
 data CommType = Email | Phone | Fax
     deriving (Data, Typeable, Show, Eq, Ord)
 
+
+------------------------------------------------------------------------------
+-- | Value implementation of @CommType@
 instance Val CommType where
     val = $(toVal ''CommType)
     cast' = $(fromVal ''CommType)
 
+
+------------------------------------------------------------------------------
+-- | @CommType@ JSON serialization function
 instance ToJSON CommType where
     toJSON = $(toJSONFunc ''CommType)
 
+
+------------------------------------------------------------------------------
+-- | Communication detail record type
 data CommDetail = CommDetail
     {
       cdType :: CommType
@@ -34,6 +46,9 @@ data CommDetail = CommDetail
     , cdPrim :: Bool
     } deriving (Data, Typeable, Show, Eq)
 
+
+------------------------------------------------------------------------------
+-- | Communication detail JSON deserialization implementation
 instance FromJSON CommDetail where
     parseJSON (Object v) = CommDetail
         <$> liftM parseType (v .: "type")
@@ -45,7 +60,11 @@ parseType :: Text -> CommType
 parseType "email" = Email
 parseType "phone" = Phone
 parseType "fax"   = Fax
+parseType ct      = error $ "Invalid communication type given: " ++ (show ct)
 
+
+------------------------------------------------------------------------------
+-- | Communication detail JSON serialization implementation
 instance ToJSON CommDetail where
     toJSON (CommDetail t v ip) =
         object [
@@ -57,6 +76,9 @@ instance ToJSON CommDetail where
               getType Phone = "phone"
               getType Fax   = "fax"
 
+
+------------------------------------------------------------------------------
+-- | Communication detail mongo conversion implementation
 instance MongoType CommDetail where
     toDoc x = [
         "type" =: cdType x,
@@ -67,6 +89,9 @@ instance MongoType CommDetail where
         <*> lookup "val" x
         <*> lookup "prim" x
 
+
+------------------------------------------------------------------------------
+-- | Validate the given communication details
 validateDetails :: [CommDetail] -> Bool
 validateDetails cds =
     all isValid grouped
