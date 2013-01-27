@@ -105,20 +105,21 @@ toLower w
 
 ------------------------------------------------------------------------------
 -- | Build the pagination @Link@ header string
-buildLinkHeader :: PagingInfo -> String -> String
+buildLinkHeader :: PagingInfo -> BS.ByteString -> BS.ByteString
 buildLinkHeader pinfo url =
-    -- TODO: operate on bytestrings instead
-    intercalate ", " $ filter (not . null) $ [getNext, getPrev]
+    BS.intercalate ", " $ filter (not . BS.null) [getNext, getPrev]
     where
       page = piPage pinfo
       size = piPageSize pinfo
-      make p rel =
-        "<" ++ url ++ "?page=" ++ (show p) ++ "&pagesize=" ++ (show size) ++
-            ">; rel=\"" ++ rel ++ "\""
+      get = BS.pack . show
+      make p rel = BS.concat [
+            "<", url, "?page=", (get p), "&pagesize=", (get size),
+            ">; rel=\"", rel, "\""
+        ]
       getNext = make (page+1) "next"
       getPrev
         | page > 0  = make (page-1) "prev"
-        | otherwise = []
+        | otherwise = BS.empty
 
 
 ------------------------------------------------------------------------------
@@ -142,8 +143,8 @@ getPagingResult func = method GET $ do
     case getPagingParams req of
         Just info -> do
             -- TODO: build full URI
-            let base = BS.unpack $ rqContextPath req
-            let link = BS.pack $ buildLinkHeader info base
+            let base = rqContextPath req
+            let link = buildLinkHeader info base
             modifyResponse $ setHeader "Link" link
             jsonResponse $ filterPaging info elements
         Nothing   ->
