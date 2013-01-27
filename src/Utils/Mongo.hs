@@ -20,7 +20,6 @@ import Control.Monad               ( (>=>) )
 import Control.Monad.IO.Class      ( MonadIO, liftIO )
 import Control.Monad.Trans.Control ( MonadBaseControl )
 import Data.Maybe                  ( catMaybes, isJust )
-import Network.Socket              ( HostName )
 
 import Database.MongoDB
 
@@ -30,12 +29,6 @@ import Database.MongoDB
 class MongoType a where
     toDoc :: a -> Document
     fromDoc :: Document -> (Maybe a)
-
-counterC :: Collection
-counterC = "counters"
-
-connection :: HostName
-connection = "127.0.0.1"
 
 
 ------------------------------------------------------------------------------
@@ -48,6 +41,8 @@ exec db action = do
     case result of
         Right v      -> return v
         Left failure -> fail $ show failure
+    where
+      connection = "127.0.0.1"
 
 
 ------------------------------------------------------------------------------
@@ -99,13 +94,15 @@ mongoFind db query = do
 mongoGetId :: MonadIO m => Applicative m => Database -> Collection -> m Int
 mongoGetId db col = do
     result <- exec db $
-        findAndModify counterC
+        findAndModify counterCol
             [ "_id" =: col ]                        -- query
             [ "$inc" =: ["current" =: (1 :: Int)] ] -- update
             True                                    -- new
             True                                    -- upsert
     let v = at "value" result :: Document
     return $ (at "current" v :: Int)
+    where
+      counterCol = "counters"
 
 
 ------------------------------------------------------------------------------
