@@ -57,7 +57,7 @@ pingHandler = do
 ------------------------------------------------------------------------------
 -- | Handler to retrieve all users (paged result)
 getUsersHandler :: Snap()
-getUsersHandler = getPagingResult $ liftIO getUsers
+getUsersHandler = getPagingResult (\p -> liftIO $ getUsersPaged p) (liftIO $ getUsers)
 
 
 ------------------------------------------------------------------------------

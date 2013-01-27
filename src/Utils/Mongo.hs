@@ -5,6 +5,7 @@ module Utils.Mongo
     ( MongoType(..)
     , mongoFind
     , mongoFindOne
+    , mongoFindPage
     , mongoExists
     , mongoInsert
     , mongoInsertIntId
@@ -23,6 +24,7 @@ import Data.Maybe                  ( catMaybes, isJust )
 
 import Database.MongoDB
 
+import Utils.Paging
 
 ------------------------------------------------------------------------------
 -- | Type class to provide BSON serialization
@@ -86,6 +88,26 @@ mongoFind :: MonadIO m => MonadBaseControl IO m => MongoType t => Database
 mongoFind db query = do
     docs <- exec db $ find query >>= rest
     return (catMaybes $ map fromDoc docs)
+
+
+------------------------------------------------------------------------------
+-- | Helper function to execute the mongo command `find` with additional
+-- pagination information to be used for $skip and $limit parameters
+mongoFindPage :: MonadIO m => MonadBaseControl IO m => MongoType t => Database
+              -> Query
+              -> PagingInfo
+              -> m (Int, [t])
+mongoFindPage db query pinfo = do
+    -- first: get the total count of the base query
+    c <- exec db $ count query
+    -- second: get the skipped/limited result set
+    docs <- exec db $ find query' >>= rest
+    return (c, catMaybes $ map fromDoc docs)
+    where
+      size = piPageSize pinfo
+      toSkip = (piPage pinfo - 1) * size
+      query' = query { limit = fromIntegral size
+                     , skip = fromIntegral toSkip }
 
 
 ------------------------------------------------------------------------------

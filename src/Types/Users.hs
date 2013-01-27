@@ -9,6 +9,7 @@ module Types.Users
     , userCollection
     , MongoType
     , getUsers
+    , getUsersPaged
     , getUserById
     , getPrimaryEmail
     , existsUserWithEmail
@@ -35,6 +36,7 @@ import Types.Address
 import Types.CommDetail
 import Utils.Bson
 import Utils.Mongo
+import Utils.Paging
 import Utils.Template
 import Utils.Validation
 
@@ -165,6 +167,14 @@ existsUserWithEmail email =
 getUsers :: MonadIO m => MonadBaseControl IO m => m [User]
 getUsers =
     mongoFind userDb (select [] userCollection)
+
+
+------------------------------------------------------------------------------
+-- | Get all Users stored in the database (paged version)
+getUsersPaged :: MonadIO m => MonadBaseControl IO m => PagingInfo
+              -> m (Int, [User])
+getUsersPaged =
+    mongoFindPage userDb (select [] userCollection)
 
 
 ------------------------------------------------------------------------------

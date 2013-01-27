@@ -4,12 +4,13 @@ module Utils.Rest where
 
 import           Prelude hiding       ( id, elem, lookup )
 import           Control.Applicative  ( (<$>), (<*>) )
+import           Control.Monad        ( liftM )
 
 import           Data.Aeson
 import qualified Data.ByteString as B ( map )
 import qualified Data.ByteString.Char8 as BS
 import           Data.Int
-import           Data.List            ( find, intercalate )
+import           Data.List            ( find )
 import           Data.Maybe           ( fromMaybe )
 import qualified Data.Map as M
 import           Data.Word            ( Word8 )
@@ -18,15 +19,9 @@ import           Database.MongoDB     ( Database, Collection )
 import           Snap.Core
 
 import           Utils.Http
+import           Utils.Paging
 import           Utils.Mongo
 
-data PagingInfo = PagingInfo
-    { piPageSize :: Int
-    , piPage :: Int
-    } deriving (Show, Eq)
-
-defaultPageSize :: Int
-defaultPageSize = 50
 
 maximumBodyLength :: Int64
 maximumBodyLength = 100000
@@ -72,11 +67,12 @@ getPagingParams req =
         getDef defaultPageSize "pagesize" <*>
         get "page"
     where
+      toMax = liftM (max 1)
       get name = case queryParamCI name req of
-        Just p  -> readFirstIntMaybe p
+        Just p  -> toMax $ readFirstIntMaybe p
         Nothing -> Nothing
       getDef def name = case queryParamCI name req of
-        Just p  -> Just $ fromMaybe def (readFirstIntMaybe p)
+        Just p  -> Just $ fromMaybe def (toMax $ readFirstIntMaybe p)
         Nothing -> Just $ def
 
 
@@ -104,51 +100,23 @@ toLower w
 
 
 ------------------------------------------------------------------------------
--- | Build the pagination @Link@ header string
-buildLinkHeader :: PagingInfo -> BS.ByteString -> BS.ByteString
-buildLinkHeader pinfo url =
-    -- TODO: add link to last page as well
-    BS.intercalate ", " $ filter (not . BS.null) [getNext, getPrev]
-    where
-      page = piPage pinfo
-      size = piPageSize pinfo
-      get = BS.pack . show
-      make p rel = BS.concat [
-            "<", url, "?page=", (get p), "&pagesize=", (get size),
-            ">; rel=\"", rel, "\""
-        ]
-      getNext = make (page+1) "next"
-      getPrev
-        | page > 0  = make (page-1) "prev"
-        | otherwise = BS.empty
-
-
-------------------------------------------------------------------------------
--- | Reduce the given result list based on the specified PagingResult
-filterPaging :: PagingInfo -> [a] -> [a]
-filterPaging pinfo =
-    take count . drop toSkip
-    where
-      use = max (0 :: Int)
-      count = use $ piPageSize pinfo
-      toSkip = use $ count * (piPage pinfo)
-
-
-------------------------------------------------------------------------------
 -- | Process the result of the given function with optional PagingResult
 -- information
-getPagingResult :: ToJSON d => Snap ([d]) -> Snap ()
-getPagingResult func = method GET $ do
-    elements <- func
+getPagingResult :: ToJSON d => (PagingInfo -> Snap (Int, [d]))
+                -> Snap [d]
+                -> Snap ()
+getPagingResult pageFunc func = method GET $ do
     req <- getRequest
     case getPagingParams req of
         Just info -> do
+            (c, elements) <- pageFunc info
             -- TODO: build full URI
             let base = rqContextPath req
-            let link = buildLinkHeader info base
+            let link = buildLinkHeader info c base
             modifyResponse $ setHeader "Link" link
-            jsonResponse $ filterPaging info elements
-        Nothing   ->
+            jsonResponse elements
+        Nothing   -> do
+            elements <- func
             jsonResponse elements
 
 
