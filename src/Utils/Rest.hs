@@ -107,6 +107,7 @@ toLower w
 -- | Build the pagination @Link@ header string
 buildLinkHeader :: PagingInfo -> BS.ByteString -> BS.ByteString
 buildLinkHeader pinfo url =
+    -- TODO: add link to last page as well
     BS.intercalate ", " $ filter (not . BS.null) [getNext, getPrev]
     where
       page = piPage pinfo
