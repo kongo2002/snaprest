@@ -119,6 +119,7 @@ filterPaging pinfo =
 -- information
 getPagingResult :: ToJSON d => Snap ([d]) -> Snap ()
 getPagingResult func = method GET $ do
+    -- TODO: implement paging via mongo $skip and $limit
     elements <- func
     req <- getRequest
     let filtered = case getPagingParams req of
