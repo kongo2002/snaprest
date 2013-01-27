@@ -1,7 +1,7 @@
 Name:                snaprest
 Version:             0.1
 Synopsis:            Snap powered REST web services
-Description:         Learning project for REST web services that is powered by the snap framework
+Description:         RESTful web service implementation in Haskell/snap with a MongoDB backend
 License:             AllRightsReserved
 Author:              Gregor Uhlenheuer
 Maintainer:          gregor@uhlenheuer.net
