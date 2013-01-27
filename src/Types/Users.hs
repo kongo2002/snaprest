@@ -8,6 +8,7 @@ module Types.Users
     , userDb
     , userCollection
     , MongoType
+    , allUsersQuery
     , getUsers
     , getUsersPaged
     , getUserById
@@ -163,10 +164,16 @@ existsUserWithEmail email =
 
 
 ------------------------------------------------------------------------------
+-- | Query to select all users in the database
+allUsersQuery :: Query
+allUsersQuery = select [] userCollection
+
+
+------------------------------------------------------------------------------
 -- | Get all Users stored in the database
 getUsers :: MonadIO m => MonadBaseControl IO m => m [User]
 getUsers =
-    mongoFind userDb (select [] userCollection)
+    mongoFind userDb allUsersQuery
 
 
 ------------------------------------------------------------------------------
@@ -174,7 +181,7 @@ getUsers =
 getUsersPaged :: MonadIO m => MonadBaseControl IO m => PagingInfo
               -> m (Int, [User])
 getUsersPaged =
-    mongoFindPage userDb (select [] userCollection)
+    mongoFindPage userDb allUsersQuery
 
 
 ------------------------------------------------------------------------------

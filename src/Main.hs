@@ -3,7 +3,6 @@
 module Main where
 
 import           Control.Applicative    ( (<|>) )
-import           Control.Monad.IO.Class ( MonadIO, liftIO )
 
 import           Snap.Core
 import           Snap.Util.FileServe
@@ -11,7 +10,7 @@ import           Snap.Http.Server
 
 import qualified Data.ByteString.Char8 as BS
 
-import           Types.Users
+import           Types.Users hiding     ( id )
 import           Utils.Http
 import           Utils.Rest
 
@@ -58,9 +57,10 @@ pingHandler = do
 -- | Handler to retrieve all users (paged result)
 getUsersHandler :: Snap ()
 getUsersHandler =
-    getPagingResult
-        (\p -> liftIO $ getUsersPaged p)
-        (liftIO $ getUsers)
+    getPagingResult userDb allUsersQuery mapper
+    where
+      mapper :: User -> User
+      mapper x = x
 
 
 ------------------------------------------------------------------------------

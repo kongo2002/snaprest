@@ -2,19 +2,20 @@
 
 module Utils.Rest where
 
-import           Prelude hiding       ( id, elem, lookup )
-import           Control.Applicative  ( (<$>), (<*>) )
-import           Control.Monad        ( liftM )
+import           Prelude hiding         ( id, elem, lookup )
+import           Control.Applicative    ( (<$>), (<*>) )
+import           Control.Monad          ( liftM )
+import           Control.Monad.IO.Class ( MonadIO, liftIO )
 
 import           Data.Aeson
-import qualified Data.ByteString as B ( map )
+import qualified Data.ByteString as B   ( map )
 import qualified Data.ByteString.Char8 as BS
 import           Data.Int
-import           Data.List            ( find )
-import           Data.Maybe           ( fromMaybe )
+import           Data.List              ( find )
+import           Data.Maybe             ( fromMaybe )
 import qualified Data.Map as M
-import           Data.Word            ( Word8 )
-import           Database.MongoDB     ( Database, Collection )
+import           Data.Word              ( Word8 )
+import           Database.MongoDB       ( Database, Collection, Query )
 
 import           Snap.Core
 
@@ -102,22 +103,23 @@ toLower w
 ------------------------------------------------------------------------------
 -- | Process the result of the given function with optional PagingResult
 -- information
-getPagingResult :: ToJSON d => (PagingInfo -> Snap (Int, [d]))
-                -> Snap [d]
+getPagingResult :: MongoType a => ToJSON b => Database
+                -> Query
+                -> (a -> b)
                 -> Snap ()
-getPagingResult pageFunc func = method GET $ do
+getPagingResult db query mapper = method GET $ do
     req <- getRequest
     case getPagingParams req of
         Just info -> do
-            (c, elements) <- pageFunc info
+            (c, elements) <- liftIO $ mongoFindPage db query info
             -- TODO: build full URI
             let base = rqContextPath req
             let link = buildLinkHeader info c base
             modifyResponse $ setHeader "Link" link
-            jsonResponse elements
+            jsonResponse $ map mapper elements
         Nothing   -> do
-            elements <- func
-            jsonResponse elements
+            elements <- liftIO $ mongoFind db query
+            jsonResponse $ map mapper elements
 
 
 ------------------------------------------------------------------------------
