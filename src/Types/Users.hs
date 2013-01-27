@@ -5,6 +5,8 @@
 
 module Types.Users
     ( User(..)
+    , userDb
+    , userCollection
     , MongoType
     , getUsers
     , getUserById
@@ -83,6 +85,7 @@ instance MongoType User where
         <*> lookup "lname" d
         <*> getList "cdetails" d
         <*> getList "addr" d
+
 
 userDb :: Text
 userDb = "test"

@@ -30,6 +30,7 @@ site =
     route [ ("status",           getStatus)
           , ("ping/:countparam", pingHandler)
           , ("users/user/:id",   getUserHandler)
+          , ("users/user/:id",   deleteUserHandler)
           , ("users/user",       putUserHandler)
           , ("users",            getUsersHandler)
           ] <|>
@@ -88,3 +89,10 @@ putUserHandler =
                         ex <- existsUserWithEmail email
                         return (ex, email)
                       Nothing -> return (False, [])
+
+
+------------------------------------------------------------------------------
+-- | Handler to remove a specific user by ID
+deleteUserHandler :: Snap ()
+deleteUserHandler = do
+    jsonDeleteId userDb userCollection

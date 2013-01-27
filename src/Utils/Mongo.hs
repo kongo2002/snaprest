@@ -9,6 +9,9 @@ module Utils.Mongo
     , mongoInsert
     , mongoInsertIntId
     , mongoGetId
+    , mongoRemove
+    , mongoRemoveOne
+    , mongoRemoveById
     ) where
 
 import Prelude hiding              ( id, elem )
@@ -103,6 +106,27 @@ mongoGetId db col = do
             True                                    -- upsert
     let v = at "value" result :: Document
     return $ (at "current" v :: Int)
+
+
+------------------------------------------------------------------------------
+-- | Helper function to remove one document based on the given query
+mongoRemoveOne :: MonadIO m => Database -> Selection -> m ()
+mongoRemoveOne db query = do
+    exec db $ deleteOne query
+
+
+------------------------------------------------------------------------------
+-- | Helper function to remove one or more documents based on the given query
+mongoRemove :: MonadIO m => Database -> Selection -> m ()
+mongoRemove db query = do
+    exec db $ delete query
+
+
+------------------------------------------------------------------------------
+-- | Helper function to remove one document based on its integer _id
+mongoRemoveById :: MonadIO m => Database -> Collection -> Int -> m ()
+mongoRemoveById db col identifier =
+    mongoRemoveOne db $ select ["_id" =: identifier] col
 
 
 ------------------------------------------------------------------------------

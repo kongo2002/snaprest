@@ -13,10 +13,12 @@ import           Data.List            ( find )
 import           Data.Maybe           ( fromMaybe )
 import qualified Data.Map as M
 import           Data.Word            ( Word8 )
+import           Database.MongoDB     ( Database, Collection )
 
 import           Snap.Core
 
 import           Utils.Http
+import           Utils.Mongo
 
 data PagingInfo = PagingInfo
     { piPageSize :: Int
@@ -133,6 +135,20 @@ jsonGetId func = getSomeIntId $ \id -> do
     case maybeFound of
       Just elem -> jsonResponse elem
       Nothing   -> writeErrorJson $ "ID " ++ show id ++ " not found"
+
+
+------------------------------------------------------------------------------
+-- | Helper function to process a DELETE request for a specified ID
+jsonDeleteId :: Database -> Collection -> Snap ()
+jsonDeleteId db col = method DELETE $ do
+    id <- getIntParam "id"
+    case id of
+        Just identifier -> do
+            mongoRemoveById db col identifier
+            modifyResponse setToJson
+            writeLBS "{\"data\":true,\"success\":true}"
+        Nothing ->
+            writeErrorJson "invalid ID given"
 
 
 ------------------------------------------------------------------------------
