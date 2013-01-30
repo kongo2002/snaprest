@@ -130,6 +130,7 @@ mongoGetId db col = do
 
 ------------------------------------------------------------------------------
 -- | Helper function to remove one document based on the given query
+-- TODO: some return value like 'n' would be nice
 mongoRemoveOne :: MonadIO m => Database -> Selection -> m ()
 mongoRemoveOne db query = do
     exec db $ deleteOne query
@@ -137,6 +138,7 @@ mongoRemoveOne db query = do
 
 ------------------------------------------------------------------------------
 -- | Helper function to remove one or more documents based on the given query
+-- TODO: some return value like 'n' would be nice
 mongoRemove :: MonadIO m => Database -> Selection -> m ()
 mongoRemove db query = do
     exec db $ delete query
@@ -144,6 +146,7 @@ mongoRemove db query = do
 
 ------------------------------------------------------------------------------
 -- | Helper function to remove one document based on its integer _id
+-- TODO: some return value like 'n' would be nice
 mongoRemoveById :: MonadIO m => Database -> Collection -> Int -> m ()
 mongoRemoveById db col identifier =
     mongoRemoveOne db $ select ["_id" =: identifier] col
@@ -180,6 +183,7 @@ mongoInsertIntId db col elem = do
 ------------------------------------------------------------------------------
 -- | Helper function to replace a given object with a specific ID into the
 -- given collection
+-- TODO: a return value like 'n' would be nice
 mongoReplaceById :: MonadIO m => MongoType a => Database
                  -> Collection
                  -> a
