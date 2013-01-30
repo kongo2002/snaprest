@@ -1,5 +1,6 @@
 module Utils.Bson
     ( getList
+    , toList
     , getMaybe
     , setMaybe
     ) where
@@ -8,7 +9,7 @@ import Prelude hiding ( lookup, elem )
 import Data.Bson      ( Document, Label, Field, Val, lookup, (=:) )
 import Data.Maybe     ( mapMaybe )
 
-import Utils.Mongo (MongoType, fromDoc)
+import Utils.Mongo (MongoType, fromDoc, toDoc)
 
 
 ------------------------------------------------------------------------------
@@ -17,6 +18,13 @@ import Utils.Mongo (MongoType, fromDoc)
 getList :: MongoType a => Label -> Document -> Maybe [a]
 getList k doc =
     Just $ maybe [] (mapMaybe fromDoc) (lookup k doc)
+
+
+------------------------------------------------------------------------------
+-- | Helper function to return @Nothing@ in case of an empty list
+toList :: MongoType a => Label -> [a] -> Maybe Field
+toList _ [] = Nothing
+toList l xs = Just (l =: map toDoc xs)
 
 
 ------------------------------------------------------------------------------

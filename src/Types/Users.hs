@@ -30,6 +30,7 @@ import Data.Bson hiding            ( value )
 import Data.Char                   ( isDigit )
 import Data.Data
 import Data.List                   ( find )
+import Data.Maybe                  ( catMaybes )
 import Data.Text                   ( Text )
 import Database.MongoDB hiding     ( value, find )
 
@@ -75,12 +76,12 @@ instance ToJSON User where
 ------------------------------------------------------------------------------
 -- | BSON conversion instance implementation of @User@
 instance MongoType User where
-    toDoc x = [
-        "_id" =: id x,
-        "fname" =: firstName x,
-        "lname" =: lastName x,
-        "cdetails" =: map toDoc (commDetails x),
-        "addr" =: map toDoc (addresses x)
+    toDoc x = catMaybes [
+        Just ("_id" =: id x),
+        Just ("fname" =: firstName x),
+        Just ("lname" =: lastName x),
+        toList "cdetails" (commDetails x),
+        toList "addr" (addresses x)
         ]
     fromDoc d = User
         <$> lookup "_id" d
