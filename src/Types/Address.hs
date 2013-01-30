@@ -4,14 +4,15 @@
 
 module Types.Address where
 
-import Prelude hiding (lookup, zip)
+import Prelude hiding      ( lookup, zip )
 
-import Control.Applicative ((<$>), (<*>))
-import Control.Monad (mzero)
+import Control.Applicative ( (<$>), (<*>) )
+import Control.Monad       ( mzero )
+
 import Data.Aeson
-import Data.Bson hiding (value)
-import Data.Data
-import Data.Maybe (catMaybes)
+import Data.Bson hiding    ( value )
+import Data.Data           ( Data, Typeable )
+import Data.Maybe          ( catMaybes )
 
 import Utils.Bson
 import Utils.Mongo
@@ -21,8 +22,7 @@ import Utils.Template
 ------------------------------------------------------------------------------
 -- | Record holding address information
 data Address = Address
-    {
-      street1 :: String
+    { street1 :: String
     , street2 :: Maybe String
     , street3 :: Maybe String
     , zip :: Maybe String

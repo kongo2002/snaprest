@@ -4,15 +4,16 @@
 
 module Types.CommDetail where
 
-import Prelude hiding (lookup)
+import Prelude hiding      ( lookup )
 
-import Control.Applicative ((<$>), (<*>))
-import Control.Monad (liftM, mzero)
-import Data.Aeson hiding (String)
-import Data.Bson hiding (value)
-import Data.Text (Text)
-import Data.Data
-import Data.List (groupBy)
+import Control.Applicative ( (<$>), (<*>) )
+import Control.Monad       ( liftM, mzero )
+
+import Data.Aeson hiding   ( String )
+import Data.Bson hiding    ( value )
+import Data.Data           ( Data, Typeable )
+import Data.List           ( groupBy )
+import Data.Text           ( Text )
 
 import Utils.Mongo
 import Utils.Template
@@ -40,8 +41,7 @@ instance ToJSON CommType where
 ------------------------------------------------------------------------------
 -- | Communication detail record type
 data CommDetail = CommDetail
-    {
-      cdType :: CommType
+    { cdType :: CommType
     , cdValue :: String
     , cdPrim :: Bool
     } deriving (Data, Typeable, Show, Eq)
