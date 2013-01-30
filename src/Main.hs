@@ -2,6 +2,7 @@
 
 module Main where
 
+import           Prelude hiding         ( id )
 import           Control.Applicative    ( (<|>) )
 
 import           Snap.Core
@@ -10,7 +11,7 @@ import           Snap.Http.Server
 
 import qualified Data.ByteString.Char8 as BS
 
-import           Types.Users hiding     ( id )
+import           Types.Users
 import           Utils.Http
 import           Utils.Rest
 
@@ -30,6 +31,7 @@ site =
           , ("ping/:countparam", pingHandler)
           , ("users/user/:id",   getUserHandler)
           , ("users/user/:id",   deleteUserHandler)
+          , ("users/user/:id",   updateUserHandler)
           , ("users/user",       putUserHandler)
           , ("users",            getUsersHandler)
           ] <|>
@@ -99,3 +101,15 @@ putUserHandler =
 deleteUserHandler :: Snap ()
 deleteUserHandler = do
     jsonDeleteId userDb userCollection
+
+
+------------------------------------------------------------------------------
+-- | Handler to update a specific user
+updateUserHandler :: Snap ()
+updateUserHandler = jsonUpdateId $ \user id' -> do
+    let userId = id user
+    if userId == id'
+       then do
+         updateUser user id'
+         jsonResponse user
+       else writeErrorJson "IDs do not match"

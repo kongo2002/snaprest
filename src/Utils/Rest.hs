@@ -147,6 +147,22 @@ jsonDeleteId db col = method DELETE $ do
 
 
 ------------------------------------------------------------------------------
+-- | Helper function to process a POST request to update a given element
+jsonUpdateId :: FromJSON d => (d -> Int -> Snap()) -> Snap ()
+jsonUpdateId func = method POST $ do
+    id <- getIntParam "id"
+    case id of
+      Just id' -> do
+        body <- readRequestBody maximumBodyLength
+        getJson body
+        where
+          getJson b = case decode' b of
+            Just d  -> func d id'
+            Nothing -> writeErrorJson "invalid input given"
+      Nothing -> writeErrorJson "invalid ID given"
+
+
+------------------------------------------------------------------------------
 -- | Helper function to process a PUT request
 jsonPut :: FromJSON d => (d -> Snap ()) -> Snap ()
 jsonPut func = method PUT $ do

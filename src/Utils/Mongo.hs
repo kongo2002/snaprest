@@ -13,6 +13,7 @@ module Utils.Mongo
     , mongoRemove
     , mongoRemoveOne
     , mongoRemoveById
+    , mongoReplaceById
     ) where
 
 import Prelude hiding              ( id, elem )
@@ -174,3 +175,17 @@ mongoInsertIntId db col elem = do
     case result of
       Int32 _ -> return elem
       _        -> fail "invalid '_id' (expected Integer)"
+
+
+------------------------------------------------------------------------------
+-- | Helper function to replace a given object with a specific ID into the
+-- given collection
+mongoReplaceById :: MonadIO m => MongoType a => Database
+                 -> Collection
+                 -> a
+                 -> Int
+                 -> m ()
+mongoReplaceById db col elem id = do
+    exec db $ replace query $ toDoc elem
+    where
+      query = select ["_id" =: id] col

@@ -16,6 +16,7 @@ module Types.Users
     , existsUserWithEmail
     , prepareUser
     , putUser
+    , updateUser
     , validateUser
     ) where
 
@@ -191,3 +192,10 @@ putUser u = do
 
     -- insert and return new user
     liftIO $ mongoInsertIntId userDb userCollection user
+
+
+------------------------------------------------------------------------------
+-- | Update the given @User@ by the specified ID
+updateUser :: MonadIO m => User -> Int -> m ()
+updateUser user id' =
+    liftIO $ mongoReplaceById userDb userCollection user id'
