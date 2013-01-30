@@ -71,3 +71,12 @@ instance MongoType Address where
         <*> getMaybe "city" x
         <*> getMaybe "country" x
         <*> lookup "prim" x
+
+
+------------------------------------------------------------------------------
+-- | Validate the given addresses
+validateAddresses :: [Address] -> Bool
+validateAddresses [] = True
+validateAddresses as =
+    let numPrimaries = length $ filter (\x -> isPrimary x) as
+    in  numPrimaries == 1
