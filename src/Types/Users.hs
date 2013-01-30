@@ -95,7 +95,7 @@ userDb :: Text
 userDb = "test"
 
 userCollection :: Text
-userCollection = "Users"
+userCollection = "users"
 
 
 ------------------------------------------------------------------------------
