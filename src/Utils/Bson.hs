@@ -9,7 +9,7 @@ import Prelude hiding ( lookup, elem )
 import Data.Bson      ( Document, Label, Field, Val, lookup, (=:) )
 import Data.Maybe     ( mapMaybe )
 
-import Utils.Mongo (MongoType, fromDoc, toDoc)
+import Utils.Mongo    ( MongoType, fromDoc, toDoc )
 
 
 ------------------------------------------------------------------------------

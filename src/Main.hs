@@ -60,9 +60,9 @@ pingHandler = do
 getUsersHandler :: Snap ()
 getUsersHandler =
     getPagingResult userDb allUsersQuery mapper
-    where
-      mapper :: User -> User
-      mapper x = x
+  where
+    mapper :: User -> User
+    mapper x = x
 
 
 ------------------------------------------------------------------------------
@@ -87,13 +87,13 @@ putUserHandler =
                         jsonResponse u
                     (True, email) ->
                         writeErrorJson $ "User with email '" ++ email ++ "' already exists"
-                where
-                  emailExists = do
-                    case getPrimaryEmail user' of
-                      Just email -> do
-                        ex <- existsUserWithEmail email
-                        return (ex, email)
-                      Nothing -> return (False, [])
+              where
+                emailExists = do
+                  case getPrimaryEmail user' of
+                    Just email -> do
+                      ex <- existsUserWithEmail email
+                      return (ex, email)
+                    Nothing -> return (False, [])
 
 
 ------------------------------------------------------------------------------
@@ -109,7 +109,7 @@ updateUserHandler :: Snap ()
 updateUserHandler = jsonUpdateId $ \user id' -> do
     let userId = id user
     if userId == id'
-       then do
-         updateUser user id'
-         jsonResponse user
-       else writeErrorJson "IDs do not match"
+        then do
+            updateUser user id'
+            jsonResponse user
+        else writeErrorJson "IDs do not match"

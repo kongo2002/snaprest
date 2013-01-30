@@ -10,7 +10,7 @@ import           Control.Monad.IO.Class ( MonadIO, liftIO )
 import           Data.Aeson
 import qualified Data.ByteString as B   ( map )
 import qualified Data.ByteString.Char8 as BS
-import           Data.Int
+import           Data.Int               ( Int64 )
 import           Data.List              ( find )
 import           Data.Maybe             ( fromMaybe )
 import qualified Data.Map as M
@@ -34,8 +34,8 @@ getSomeInt :: BS.ByteString -> (Int -> Snap ()) -> Snap ()
 getSomeInt name func = method GET $ do
     idParam <- getIntParam name
     case idParam of
-      Just id -> func id
-      Nothing -> notFound
+        Just id -> func id
+        Nothing -> notFound
 
 
 ------------------------------------------------------------------------------
@@ -50,8 +50,8 @@ getSomeStr :: BS.ByteString -> (String -> Snap ()) -> Snap ()
 getSomeStr name func = method GET $ do
     keyParam <- getParam name
     case keyParam of
-      Just key -> func $ BS.unpack key
-      Nothing  -> notFound
+        Just key -> func $ BS.unpack key
+        Nothing  -> notFound
 
 
 ------------------------------------------------------------------------------
@@ -67,12 +67,12 @@ getPagingParams req =
     PagingInfo <$>
         getDef defaultPageSize "pagesize" <*>
         get "page"
-    where
-      toMax = liftM (max 1)
-      get name = case queryParamCI name req of
+  where
+    toMax = liftM (max 1)
+    get name = case queryParamCI name req of
         Just p  -> toMax $ readFirstIntMaybe p
         Nothing -> Nothing
-      getDef def name = case queryParamCI name req of
+    getDef def name = case queryParamCI name req of
         Just p  -> Just $ fromMaybe def (toMax $ readFirstIntMaybe p)
         Nothing -> Just $ def
 
@@ -85,9 +85,9 @@ queryParamCI name rq =
     case find comp lst of
         Just (_, v) -> Just v
         Nothing     -> Nothing
-    where
-      lst = M.toList $ rqQueryParams rq
-      comp kv = name == (B.map toLower $ fst kv)
+  where
+    lst = M.toList $ rqQueryParams rq
+    comp kv = name == (B.map toLower $ fst kv)
 
 
 ------------------------------------------------------------------------------
@@ -128,8 +128,8 @@ jsonGetId :: ToJSON d => (Int -> Snap (Maybe d)) -> Snap ()
 jsonGetId func = getSomeIntId $ \id -> do
     maybeFound <- func id
     case maybeFound of
-      Just elem -> jsonResponse elem
-      Nothing   -> writeErrorJson $ "ID " ++ show id ++ " not found"
+        Just elem -> jsonResponse elem
+        Nothing   -> writeErrorJson $ "ID " ++ show id ++ " not found"
 
 
 ------------------------------------------------------------------------------
@@ -152,14 +152,14 @@ jsonUpdateId :: FromJSON d => (d -> Int -> Snap()) -> Snap ()
 jsonUpdateId func = method POST $ do
     id <- getIntParam "id"
     case id of
-      Just id' -> do
-        body <- readRequestBody maximumBodyLength
-        getJson body
-        where
-          getJson b = case decode' b of
-            Just d  -> func d id'
-            Nothing -> writeErrorJson "invalid input given"
-      Nothing -> writeErrorJson "invalid ID given"
+        Just id' -> do
+            body <- readRequestBody maximumBodyLength
+            getJson body
+          where
+            getJson b = case decode' b of
+                Just d  -> func d id'
+                Nothing -> writeErrorJson "invalid input given"
+        Nothing -> writeErrorJson "invalid ID given"
 
 
 ------------------------------------------------------------------------------
@@ -168,7 +168,7 @@ jsonPut :: FromJSON d => (d -> Snap ()) -> Snap ()
 jsonPut func = method PUT $ do
     body <- readRequestBody maximumBodyLength
     getJson body
-    where
-      getJson b = case decode' b of
+  where
+    getJson b = case decode' b of
         Just d  -> func d
         Nothing -> writeErrorJson "invalid input given"

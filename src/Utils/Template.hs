@@ -105,9 +105,8 @@ fromVal name =
         lam1E (varP value) $
             caseE (varE value)
                   ([buildFromValArgs sanitizeField c | c <- cs] ++ [wildcard]))
-    where
-      wildcard = do
-          match wildP (normalB [e|Nothing|]) []
+  where
+    wildcard = match wildP (normalB [e|Nothing|]) []
 
 
 ------------------------------------------------------------------------------
@@ -117,9 +116,9 @@ buildToValArgs nameConv (NormalC ctor []) = do
     match (conP ctor [])
           (normalB $ stringV)
           []
-    where
-      stringV =
-          [e|B.String|] `appE` ([e|T.pack|] `appE` (fieldExpr nameConv $ ctor))
+  where
+    stringV =
+        [e|B.String|] `appE` ([e|T.pack|] `appE` (fieldExpr nameConv $ ctor))
 
 
 buildToValArgs _ _ = errF "Specified constructor type is not supported yet"
@@ -132,8 +131,8 @@ buildFromValArgs nameConv (NormalC ctor []) = do
     match (conP strName [litP $ fieldL nameConv ctor])
           (normalB $ [e|Just|] `appE` conE ctor)
           []
-    where
-      strName = mkName "String"
+  where
+    strName = mkName "String"
 
 buildFromValArgs _ _ = errF "Specified constructor type is not supported yet"
 
@@ -183,33 +182,33 @@ fieldToJsonExpr nameConv arg fname ty =
         -- TODO: there has to be something better...
         AppT (ConT m) _ | (show m) == maybeName -> maybeExpr
         _                                       -> defExpr
-    where
-      maybeName = "Data.Maybe.Maybe"
+  where
+    maybeName = "Data.Maybe.Maybe"
 
-      -- special handling of Maybe types
-      maybeExpr = [e|maybe|] `appE` [e|Nothing|] `appE`
-        -- maybe Nothing (\_ -> Just ((T.pack "...") .= <fname>)) <fname>
-        lam1E wildP
-          ([e|Just|] `appE`
-            (infixApp ([e|T.pack|] `appE` fieldExpr nameConv fname)
-                      [e|(.=)|]
-                      (varE arg))) `appE` (varE arg)
+    -- special handling of Maybe types
+    maybeExpr = [e|maybe|] `appE` [e|Nothing|] `appE`
+      -- maybe Nothing (\_ -> Just ((T.pack "...") .= <fname>)) <fname>
+      lam1E wildP
+        ([e|Just|] `appE`
+          (infixApp ([e|T.pack|] `appE` fieldExpr nameConv fname)
+                    [e|(.=)|]
+                    (varE arg))) `appE` (varE arg)
 
-      -- special handling for List types
-      listExpr = caseE (varE arg) [
-          -- case <fname> of { [] -> Nothing; _ -> defExpr }
-          match (listP [])
-                (normalB [e|Nothing|])
-                [],
-          match wildP
-                (normalB defExpr)
-                []
-        ]
+    -- special handling for List types
+    listExpr = caseE (varE arg) [
+        -- case <fname> of { [] -> Nothing; _ -> defExpr }
+        match (listP [])
+              (normalB [e|Nothing|])
+              [],
+        match wildP
+              (normalB defExpr)
+              []
+      ]
 
-      -- default field handling
-      defExpr =
-        -- Just ((T.pack "...") .= <fname>)
-        [e|Just|] `appE`
-            (infixApp ([e|T.pack|] `appE` fieldExpr nameConv fname)
-                      [e|(.=)|]
-                      (varE arg))
+    -- default field handling
+    defExpr =
+      -- Just ((T.pack "...") .= <fname>)
+      [e|Just|] `appE`
+          (infixApp ([e|T.pack|] `appE` fieldExpr nameConv fname)
+                    [e|(.=)|]
+                    (varE arg))

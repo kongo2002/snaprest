@@ -17,7 +17,7 @@ module Utils.Mongo
     ) where
 
 import Prelude hiding              ( id, elem )
-import Control.Applicative
+import Control.Applicative         ( Applicative )
 import Control.Monad               ( (>=>) )
 import Control.Monad.IO.Class      ( MonadIO, liftIO )
 import Control.Monad.Trans.Control ( MonadBaseControl )
@@ -44,8 +44,8 @@ exec db action = do
     case result of
         Right v      -> return v
         Left failure -> fail $ show failure
-    where
-      connection = "127.0.0.1"
+  where
+    connection = "127.0.0.1"
 
 
 ------------------------------------------------------------------------------
@@ -101,14 +101,15 @@ mongoFindPage :: MonadIO m => MonadBaseControl IO m => MongoType t => Database
 mongoFindPage db query pinfo = do
     -- first: get the total count of the base query
     c <- exec db $ count query
+
     -- second: get the skipped/limited result set
     docs <- exec db $ find query' >>= rest
     return (c, catMaybes $ map fromDoc docs)
-    where
-      size = piPageSize pinfo
-      toSkip = (piPage pinfo - 1) * size
-      query' = query { limit = fromIntegral size
-                     , skip = fromIntegral toSkip }
+  where
+    size = piPageSize pinfo
+    toSkip = (piPage pinfo - 1) * size
+    query' = query { limit = fromIntegral size
+                   , skip = fromIntegral toSkip }
 
 
 ------------------------------------------------------------------------------
@@ -124,8 +125,8 @@ mongoGetId db col = do
             True                                    -- upsert
     let v = at "value" result :: Document
     return $ (at "current" v :: Int)
-    where
-      counterCol = "counters"
+  where
+    counterCol = "counters"
 
 
 ------------------------------------------------------------------------------
@@ -191,5 +192,5 @@ mongoReplaceById :: MonadIO m => MongoType a => Database
                  -> m ()
 mongoReplaceById db col elem id = do
     exec db $ replace query $ toDoc elem
-    where
-      query = select ["_id" =: id] col
+  where
+    query = select ["_id" =: id] col

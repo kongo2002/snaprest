@@ -66,24 +66,23 @@ parseType ct      = error $ "Invalid communication type given: " ++ (show ct)
 ------------------------------------------------------------------------------
 -- | Communication detail JSON serialization implementation
 instance ToJSON CommDetail where
-    toJSON (CommDetail t v ip) =
-        object [
-              "type" .= (getType t)
-            , "value" .= v
-            , "isPrimary" .= ip]
-        where getType :: CommType -> Text
-              getType Email = "email"
-              getType Phone = "phone"
-              getType Fax   = "fax"
+    toJSON (CommDetail t v ip) = object
+        [ "type" .= (getType t)
+        , "value" .= v
+        , "isPrimary" .= ip ]
+      where getType :: CommType -> Text
+            getType Email = "email"
+            getType Phone = "phone"
+            getType Fax   = "fax"
 
 
 ------------------------------------------------------------------------------
 -- | Communication detail mongo conversion implementation
 instance MongoType CommDetail where
-    toDoc x = [
-        "type" =: cdType x,
-        "val" =: cdValue x,
-        "prim" =: cdPrim x]
+    toDoc x =
+        [ "type" =: cdType x
+        , "val" =: cdValue x
+        , "prim" =: cdPrim x ]
     fromDoc x = CommDetail
         <$> lookup "type" x
         <*> lookup "val" x
@@ -95,10 +94,10 @@ instance MongoType CommDetail where
 validateDetails :: [CommDetail] -> Bool
 validateDetails cds =
     all isValid grouped
-    where
-      grouped =  groupBy (\x y -> cdType x == cdType y) cds
+  where
+    grouped =  groupBy (\x y -> cdType x == cdType y) cds
 
-      isValid [] = True
-      isValid xs = numPrimaries xs == 1
+    isValid [] = True
+    isValid xs = numPrimaries xs == 1
 
-      numPrimaries = length . filter (\x -> cdPrim x)
+    numPrimaries = length . filter (\x -> cdPrim x)

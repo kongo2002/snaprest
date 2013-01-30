@@ -47,8 +47,7 @@ import Utils.Validation
 ------------------------------------------------------------------------------
 -- | Record to hold user information
 data User = User
-    {
-      id :: Int
+    { id :: Int
     , firstName :: String
     , lastName :: String
     , commDetails :: [CommDetail]
@@ -77,13 +76,13 @@ instance ToJSON User where
 ------------------------------------------------------------------------------
 -- | BSON conversion instance implementation of @User@
 instance MongoType User where
-    toDoc x = catMaybes [
-        Just ("_id" =: id x),
-        Just ("fname" =: firstName x),
-        Just ("lname" =: lastName x),
-        toList "cdetails" (commDetails x),
-        toList "addr" (addresses x)
-        ]
+    toDoc x = catMaybes
+        [ Just ("_id" =: id x)
+        , Just ("fname" =: firstName x)
+        , Just ("lname" =: lastName x)
+        , toList "cdetails" (commDetails x)
+        , toList "addr" (addresses x) ]
+
     fromDoc d = User
         <$> lookup "_id" d
         <*> lookup "fname" d
@@ -108,9 +107,9 @@ validateUser u =
     ensure "invalid communication details given" (validateDetails $ commDetails u) >>=
     ensure "invalid addresses given" (validateAddresses $ addresses u)
 
-    where
-      validName [] = False
-      validName (x:_)
+  where
+    validName []    = False
+    validName (x:_)
         | isDigit x = False
         | otherwise = True
 
@@ -121,12 +120,12 @@ prepareUser :: User -> User
 prepareUser user =
     user { addresses = defAddr $ addresses user
          , commDetails = defCds $ commDetails user }
-    where
-      defAddr [a] = [a {isPrimary = True}]
-      defAddr as  = as
+  where
+    defAddr [a] = [a {isPrimary = True}]
+    defAddr as  = as
 
-      defCds [c] = [c {cdPrim = True}]
-      defCds cs  = cs
+    defCds [c] = [c {cdPrim = True}]
+    defCds cs  = cs
 
 
 ------------------------------------------------------------------------------
@@ -134,10 +133,10 @@ prepareUser user =
 getPrimaryEmail :: User -> Maybe String
 getPrimaryEmail user =
     cdValue <$> getPrimary (commDetails user)
-    where
-      getPrimary []  = Nothing
-      getPrimary [c] = Just c
-      getPrimary cds = find (\c -> cdType c == Email && cdPrim c) cds
+  where
+    getPrimary []  = Nothing
+    getPrimary [c] = Just c
+    getPrimary cds = find (\c -> cdType c == Email && cdPrim c) cds
 
 
 ------------------------------------------------------------------------------
@@ -145,8 +144,8 @@ getPrimaryEmail user =
 getUserById :: MonadIO m => Int -> m (Maybe User)
 getUserById uid =
     mongoFindOne userDb query
-    where
-      query = select ["_id" =: uid] userCollection
+  where
+    query = select ["_id" =: uid] userCollection
 
 
 ------------------------------------------------------------------------------
@@ -154,10 +153,10 @@ getUserById uid =
 existsUserWithEmail :: MonadIO m => String -> m Bool
 existsUserWithEmail email =
     mongoExists userDb query
-    where
-      cd = ["type" =: ("email"::String), "val" =: email]
-      em = ["$elemMatch" =: cd]
-      query = select ["cdetails" =: em] userCollection
+  where
+    cd = ["type" =: ("email"::String), "val" =: email]
+    em = ["$elemMatch" =: cd]
+    query = select ["cdetails" =: em] userCollection
 
 
 ------------------------------------------------------------------------------
@@ -169,16 +168,14 @@ allUsersQuery = select [] userCollection
 ------------------------------------------------------------------------------
 -- | Get all Users stored in the database
 getUsers :: MonadIO m => MonadBaseControl IO m => m [User]
-getUsers =
-    mongoFind userDb allUsersQuery
+getUsers = mongoFind userDb allUsersQuery
 
 
 ------------------------------------------------------------------------------
 -- | Get all Users stored in the database (paged version)
 getUsersPaged :: MonadIO m => MonadBaseControl IO m => PagingInfo
               -> m (Int, [User])
-getUsersPaged =
-    mongoFindPage userDb allUsersQuery
+getUsersPaged = mongoFindPage userDb allUsersQuery
 
 
 ------------------------------------------------------------------------------

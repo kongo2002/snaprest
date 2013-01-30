@@ -3,13 +3,14 @@
 module Utils.Http where
 
 import           Snap.Core
-import           Data.Aeson
-import           Data.Maybe (fromMaybe, mapMaybe)
+import           Data.Aeson                 ( ToJSON, toJSON, object, (.=)
+                                            , encode )
+import           Data.Maybe                 ( fromMaybe, mapMaybe )
 
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as LBS
 
-import           Data.ByteString.Lex.Double (readDouble)
+import           Data.ByteString.Lex.Double ( readDouble )
 
 
 ------------------------------------------------------------------------------
@@ -116,8 +117,8 @@ getIntParamDef bs d = do
 rqListParam :: BS.ByteString -> Request -> [BS.ByteString]
 rqListParam bs rq =
     maybe [] splitParams (rqParam bs rq)
-    where
-        splitParams = concatMap (BS.split ',')
+  where
+    splitParams = concatMap (BS.split ',')
 
 
 ------------------------------------------------------------------------------
