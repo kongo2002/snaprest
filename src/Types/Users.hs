@@ -28,7 +28,7 @@ import Control.Monad.Trans.Control ( MonadBaseControl )
 import Data.Aeson
 import Data.Bson hiding            ( value )
 import Data.Char                   ( isDigit )
-import Data.Data
+import Data.Data                   ( Data, Typeable )
 import Data.List                   ( find )
 import Data.Maybe                  ( catMaybes )
 import Data.Text                   ( Text )
