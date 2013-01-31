@@ -6,23 +6,29 @@ module Utils.Template
     , fromJSONFunc
     , toVal
     , fromVal
+    , toDocFunc
     ) where
 
+import           Prelude        ( error, Integer, String )
+
 import           Control.Monad  ( mapM, return )
+
 import           Data.Aeson     ( object, (.=), toJSON )
 import           Data.Aeson.TH  ( mkParseJSON )
+import           Data.Bool      ( Bool(..) )
 import qualified Data.Bson as B
 import           Data.Char      ( isUpper, toLower )
 import           Data.Eq        ( (==) )
-import           Data.Bool      ( Bool(..) )
 import           Data.Function  ( (.), ($), id )
 import           Data.List      ( map, (++), zip, length )
 import           Data.Maybe     ( Maybe(..), catMaybes, maybe )
 import qualified Data.Text as T ( pack )
-import           Prelude        ( error, Integer, String )
+
 import           Text.Show      ( show )
 
 import           Language.Haskell.TH
+
+import           Utils.Bson     ( setMaybe, toList )
 
 ------------------------------------------------------------------------------
 -- | Remove any leading underscore or uppercase letters
@@ -44,6 +50,11 @@ fieldExpr conv = litE . fieldL conv
 
 errF :: String -> a
 errF msg = error $ "Utils.Template: " ++ msg
+
+
+maybeName :: String
+maybeName = "Data.Maybe.Maybe"
+
 
 ------------------------------------------------------------------------------
 -- | Utility function to execute a function based on its contructors by a
@@ -72,6 +83,13 @@ toJSONFunc name =
 -- name
 fromJSONFunc :: Name -> Q Exp
 fromJSONFunc = mkParseJSON id
+
+
+------------------------------------------------------------------------------
+-- | Build a `toDoc` instance function for the type with the specified name
+toDocFunc :: Name -> (String -> String) -> Q Exp
+toDocFunc name mapper =
+    useType name (\_ ctors -> ctorLambda buildToDoc mapper ctors)
 
 
 ------------------------------------------------------------------------------
@@ -109,6 +127,42 @@ fromVal name =
     wildcard = match wildP (normalB [e|Nothing|]) []
 
 
+
+------------------------------------------------------------------------------
+-- | Build the match expressions for the 'toDoc' function
+buildToDoc :: (String -> String) -> Con -> MatchQ
+buildToDoc nameConv (RecC ctorName types) = do
+    -- get argument names
+    args <- mapM newName ["arg" ++ show n | (_, n) <- zip types [1 :: Integer ..]]
+    -- build field expressions
+    let fields = [ fieldToDoc arg field ty
+                 | (arg, (field, _, ty)) <- zip args types
+                 ]
+    -- match expression
+    match (conP ctorName $ map varP args)
+          -- object $ catMaybes [ ... ]
+          (normalB $ ([e|catMaybes|] `appE` listE fields))
+          []
+  where
+    fieldToDoc :: Name -> Name -> Type -> ExpQ
+    fieldToDoc arg fname ty =
+        case ty of
+            AppT ListT _                            -> listExpr
+            -- TODO: there has to be something better...
+            AppT (ConT m) _ | (show m) == maybeName -> maybeExpr
+            _                                       -> defExpr
+      where
+        name = fieldExpr nameConv fname
+
+        maybeExpr = [e|setMaybe|] `appE` name `appE` varE arg
+
+        listExpr = [e|toList|] `appE` name `appE` varE arg
+
+        defExpr = [e|Just|] `appE` (infixApp name [e|(B.=:)|] (varE arg))
+
+buildToDoc _ _ = errF "Specified constructor type is not supported yet"
+
+
 ------------------------------------------------------------------------------
 -- | Build match expressions for the `toVal` function
 buildToValArgs :: (String -> String) -> Con -> MatchQ
@@ -119,7 +173,6 @@ buildToValArgs nameConv (NormalC ctor []) = do
   where
     stringV =
         [e|B.String|] `appE` ([e|T.pack|] `appE` (fieldExpr nameConv $ ctor))
-
 
 buildToValArgs _ _ = errF "Specified constructor type is not supported yet"
 
@@ -183,8 +236,6 @@ fieldToJsonExpr nameConv arg fname ty =
         AppT (ConT m) _ | (show m) == maybeName -> maybeExpr
         _                                       -> defExpr
   where
-    maybeName = "Data.Maybe.Maybe"
-
     -- special handling of Maybe types
     maybeExpr = [e|maybe|] `appE` [e|Nothing|] `appE`
       -- maybe Nothing (\_ -> Just ((T.pack "...") .= <fname>)) <fname>
