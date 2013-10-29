@@ -19,7 +19,7 @@ import           Database.MongoDB       ( Database, Collection, Query )
 
 import           Snap.Core
 
-import           Types.Application
+import           Application
 import           Utils.Http
 import           Utils.Paging
 import           Utils.Mongo

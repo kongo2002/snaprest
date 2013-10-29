@@ -12,7 +12,7 @@ import qualified Data.ByteString.Lazy.Char8 as LBS
 
 import           Data.ByteString.Lex.Double ( readDouble )
 
-import           Types.Application
+import           Application
 
 
 ------------------------------------------------------------------------------
