@@ -23,7 +23,7 @@ import Control.Monad.IO.Class      ( MonadIO, liftIO )
 import Control.Monad.Trans.Control ( MonadBaseControl )
 import Data.Maybe                  ( catMaybes, isJust )
 
-import Database.MongoDB
+import Database.MongoDB hiding     ( findAndModify )
 
 import Utils.Paging
 

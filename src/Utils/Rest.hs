@@ -19,6 +19,7 @@ import           Database.MongoDB       ( Database, Collection, Query )
 
 import           Snap.Core
 
+import           Types.Application
 import           Utils.Http
 import           Utils.Paging
 import           Utils.Mongo
@@ -30,7 +31,7 @@ maximumBodyLength = 100000
 
 ------------------------------------------------------------------------------
 -- | Execute the given function based on a specified identifier integer
-getSomeInt :: BS.ByteString -> (Int -> Snap ()) -> Snap ()
+getSomeInt :: BS.ByteString -> (Int -> AppHandler ()) -> AppHandler ()
 getSomeInt name func = method GET $ do
     idParam <- getIntParam name
     case idParam of
@@ -40,13 +41,13 @@ getSomeInt name func = method GET $ do
 
 ------------------------------------------------------------------------------
 -- | Execute the given function based on a 'id' integer identifier
-getSomeIntId :: (Int -> Snap ()) -> Snap ()
+getSomeIntId :: (Int -> AppHandler ()) -> AppHandler ()
 getSomeIntId = getSomeInt "id"
 
 
 ------------------------------------------------------------------------------
 -- | Execute the given function based on a specified identifier string
-getSomeStr :: BS.ByteString -> (String -> Snap ()) -> Snap ()
+getSomeStr :: BS.ByteString -> (String -> AppHandler ()) -> AppHandler ()
 getSomeStr name func = method GET $ do
     keyParam <- getParam name
     case keyParam of
@@ -56,7 +57,7 @@ getSomeStr name func = method GET $ do
 
 ------------------------------------------------------------------------------
 -- | Execute the given function based on a 'key' string identifier
-getSomeStrKey :: (String -> Snap ()) -> Snap ()
+getSomeStrKey :: (String -> AppHandler ()) -> AppHandler ()
 getSomeStrKey = getSomeStr "key"
 
 
@@ -106,7 +107,7 @@ toLower w
 getPagingResult :: MongoType a => ToJSON b => Database
                 -> Query
                 -> (a -> b)
-                -> Snap ()
+                -> AppHandler ()
 getPagingResult db query mapper = method GET $ do
     req <- getRequest
     case getPagingParams req of
@@ -124,7 +125,7 @@ getPagingResult db query mapper = method GET $ do
 
 ------------------------------------------------------------------------------
 -- | Helper function to process a GET request for a specified ID
-jsonGetId :: ToJSON d => (Int -> Snap (Maybe d)) -> Snap ()
+jsonGetId :: ToJSON d => (Int -> AppHandler (Maybe d)) -> AppHandler ()
 jsonGetId func = getSomeIntId $ \id -> do
     maybeFound <- func id
     case maybeFound of
@@ -134,7 +135,7 @@ jsonGetId func = getSomeIntId $ \id -> do
 
 ------------------------------------------------------------------------------
 -- | Helper function to process a DELETE request for a specified ID
-jsonDeleteId :: Database -> Collection -> Snap ()
+jsonDeleteId :: Database -> Collection -> AppHandler ()
 jsonDeleteId db col = method DELETE $ do
     id <- getIntParam "id"
     case id of
@@ -148,7 +149,7 @@ jsonDeleteId db col = method DELETE $ do
 
 ------------------------------------------------------------------------------
 -- | Helper function to process a POST request to update a given element
-jsonUpdateId :: FromJSON d => (d -> Int -> Snap()) -> Snap ()
+jsonUpdateId :: FromJSON d => (d -> Int -> AppHandler()) -> AppHandler ()
 jsonUpdateId func = method POST $ do
     id <- getIntParam "id"
     case id of
@@ -164,7 +165,7 @@ jsonUpdateId func = method POST $ do
 
 ------------------------------------------------------------------------------
 -- | Helper function to process a PUT request
-jsonPut :: FromJSON d => (d -> Snap ()) -> Snap ()
+jsonPut :: FromJSON d => (d -> AppHandler ()) -> AppHandler ()
 jsonPut func = method PUT $ do
     body <- readRequestBody maximumBodyLength
     getJson body

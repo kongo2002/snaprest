@@ -12,6 +12,8 @@ import qualified Data.ByteString.Lazy.Char8 as LBS
 
 import           Data.ByteString.Lex.Double ( readDouble )
 
+import           Types.Application
+
 
 ------------------------------------------------------------------------------
 -- | Record to represent error information
@@ -136,7 +138,7 @@ setToJson = setContentType $ BS.pack "application/json; charset=utf-8"
 
 ------------------------------------------------------------------------------
 -- | Return a JSON response wrapped in a '{data:...,success:true}' form.
-jsonResponse :: ToJSON a => a -> Snap ()
+jsonResponse :: ToJSON a => a -> AppHandler ()
 jsonResponse element = do
     modifyResponse setToJson
     let elemJson = encode element
@@ -145,7 +147,7 @@ jsonResponse element = do
 
 ------------------------------------------------------------------------------
 -- | Write an error response with a given code and message.
-writeErrorResponse :: Int -> String -> Snap ()
+writeErrorResponse :: Int -> String -> AppHandler ()
 writeErrorResponse code msg = do
     modifyResponse $ setResponseCode code
     writeBS $ BS.pack msg
@@ -154,7 +156,7 @@ writeErrorResponse code msg = do
 ------------------------------------------------------------------------------
 -- | Write a JSON formatted error response with an optional error code
 -- and message.
-writeErrorJsonCode :: Maybe Int -> String -> Snap ()
+writeErrorJsonCode :: Maybe Int -> String -> AppHandler ()
 writeErrorJsonCode code msg = do
     modifyResponse setToJson
     writeLBS $ encode $ ErrorJson False msg code
@@ -162,29 +164,29 @@ writeErrorJsonCode code msg = do
 
 ------------------------------------------------------------------------------
 -- | Write a JSON formatted error response with a given message.
-writeErrorJson :: String -> Snap ()
+writeErrorJson :: String -> AppHandler ()
 writeErrorJson = writeErrorJsonCode Nothing
 
 
 ------------------------------------------------------------------------------
 -- | Return a 404 error response with a specified message.
-notFoundMsg :: String -> Snap ()
+notFoundMsg :: String -> AppHandler ()
 notFoundMsg msg = writeErrorResponse 404 msg
 
 
 ------------------------------------------------------------------------------
 -- | Return a 404 error response.
-notFound :: Snap ()
+notFound :: AppHandler ()
 notFound = notFoundMsg "Not found"
 
 
 ------------------------------------------------------------------------------
 -- | Return a 500 error response with a specified message.
-invalidMsg :: String -> Snap ()
+invalidMsg :: String -> AppHandler ()
 invalidMsg = writeErrorResponse 500
 
 
 ------------------------------------------------------------------------------
 -- | Return a 500 error response.
-invalidInput :: Snap ()
+invalidInput :: AppHandler ()
 invalidInput = invalidMsg "Invalid input given"

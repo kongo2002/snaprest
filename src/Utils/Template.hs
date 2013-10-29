@@ -14,7 +14,7 @@ import           Prelude        ( error, Integer, String )
 import           Control.Monad  ( mapM, return )
 
 import           Data.Aeson     ( object, (.=), toJSON )
-import           Data.Aeson.TH  ( mkParseJSON )
+import           Data.Aeson.TH  ( mkParseJSON, defaultOptions )
 import           Data.Bool      ( Bool(..) )
 import qualified Data.Bson as B
 import           Data.Char      ( isUpper, toLower )
@@ -82,7 +82,7 @@ toJSONFunc name =
 -- | Build a `fromJSON` instance function for the type with the specified
 -- name
 fromJSONFunc :: Name -> Q Exp
-fromJSONFunc = mkParseJSON id
+fromJSONFunc = mkParseJSON defaultOptions
 
 
 ------------------------------------------------------------------------------

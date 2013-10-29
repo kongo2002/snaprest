@@ -6,41 +6,60 @@ import           Prelude hiding         ( id )
 import           Control.Applicative    ( (<|>) )
 
 import           Snap.Core
-import           Snap.Util.FileServe
 import           Snap.Http.Server
+import           Snap.Snaplet
+import           Snap.Snaplet.Auth
+import           Snap.Snaplet.Auth.Backends.JsonFile
+import           Snap.Snaplet.Session.Backends.CookieSession
+import           Snap.Util.FileServe
 
 import qualified Data.ByteString.Char8 as BS
 
+import           Types.Application
 import           Types.Users
 import           Utils.Http
 import           Utils.Rest
 
+
 version :: String
 version = "0.1"
 
+
+------------------------------------------------------------------------------
+-- | Main application
 main :: IO ()
-main = quickHttpServe site
+main = serveSnaplet defaultConfig initApp
 
 
 ------------------------------------------------------------------------------
--- | Site request dispatcher
-site :: Snap ()
-site =
-    ifTop (writeBS "snaprest - REST web services (testing project)") <|>
-    route [ ("status",           getStatus)
-          , ("ping/:countparam", pingHandler)
-          , ("users/user/:id",   getUserHandler)
-          , ("users/user/:id",   deleteUserHandler)
-          , ("users/user/:id",   updateUserHandler)
-          , ("users/user",       putUserHandler)
-          , ("users",            getUsersHandler)
-          ] <|>
-    dir "static" (serveDirectory ".")
+-- | Main snaplet initialization
+initApp :: SnapletInit App App
+initApp = makeSnaplet "snaprest" "REST web services" Nothing $ do
+    -- init sessions
+    s <- nestSnaplet "session" sess $
+        initCookieSessionManager "skey.txt" "cookie" Nothing
+    -- init auth
+    a <- nestSnaplet "auth" auth $
+        initJsonFileAuthManager defAuthSettings sess "login.json"
+    -- routes
+    addRoutes [ ("", ifTop           root)
+              , ("status",           getStatus)
+              , ("ping/:countparam", pingHandler)
+              , ("users/user/:id",   getUserHandler)
+              , ("users/user/:id",   deleteUserHandler)
+              , ("users/user/:id",   updateUserHandler)
+              , ("users/user",       putUserHandler)
+              , ("users",            getUsersHandler)
+              ]
+    wrapSite (<|> dir "static" (serveDirectory "."))
+    return $ App a s
+  where
+    root = writeBS "snaprest - REST web services (testing project)"
 
 
 ------------------------------------------------------------------------------
 -- | Status call
-getStatus :: Snap ()
+getStatus :: AppHandler ()
 getStatus =
     let output = "snaprest running\n\nversion: " ++ version
     in writeBS $ BS.pack output
@@ -49,7 +68,7 @@ getStatus =
 ------------------------------------------------------------------------------
 -- | Examplary ping request handler
 -- (may be used for simple performance tests)
-pingHandler :: Snap ()
+pingHandler :: AppHandler ()
 pingHandler = do
     count <- getIntParamDef "countparam" 10
     writeBS $ BS.pack $ replicate count '*'
@@ -57,7 +76,7 @@ pingHandler = do
 
 ------------------------------------------------------------------------------
 -- | Handler to retrieve all users (paged result)
-getUsersHandler :: Snap ()
+getUsersHandler :: AppHandler ()
 getUsersHandler =
     getPagingResult userDb allUsersQuery mapper
   where
@@ -67,13 +86,13 @@ getUsersHandler =
 
 ------------------------------------------------------------------------------
 -- | Handler to retrieve a specific user
-getUserHandler :: Snap ()
+getUserHandler :: AppHandler ()
 getUserHandler = jsonGetId $ getUserById
 
 
 ------------------------------------------------------------------------------
 -- | Handler to add a new user
-putUserHandler :: Snap ()
+putUserHandler :: AppHandler ()
 putUserHandler =
     jsonPut $ \user ->
         let user' = prepareUser user
@@ -98,17 +117,17 @@ putUserHandler =
 
 ------------------------------------------------------------------------------
 -- | Handler to remove a specific user by ID
-deleteUserHandler :: Snap ()
+deleteUserHandler :: AppHandler ()
 deleteUserHandler = do
     jsonDeleteId userDb userCollection
 
 
 ------------------------------------------------------------------------------
 -- | Handler to update a specific user
-updateUserHandler :: Snap ()
+updateUserHandler :: AppHandler ()
 updateUserHandler = jsonUpdateId $ \user id' -> do
-    let userId = id user
-    if userId == id'
+    let uid = id user
+    if uid == id'
         then do
             updateUser user id'
             jsonResponse user
