@@ -15,6 +15,7 @@ import           Snap.Util.FileServe
 
 import           Application
 import           Handlers
+import           Utils.Http             ( notFoundJson )
 
 
 ------------------------------------------------------------------------------
@@ -49,7 +50,10 @@ initApp = makeSnaplet "snaprest" "REST web services" Nothing $ do
               , ("status",             getStatus)
               , ("ping/:countparam",   pingHandler)
               ]
+
     wrapSite (<|> dir "static" (serveDirectory "."))
+    wrapSite (<|> notFoundJson)
+
     return $ App a s
   where
     root = writeBS "snaprest - REST web services (testing project)"

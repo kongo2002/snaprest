@@ -12,8 +12,6 @@ import qualified Data.ByteString.Lazy.Char8 as LBS
 
 import           Data.ByteString.Lex.Double ( readDouble )
 
-import           Application
-
 
 ------------------------------------------------------------------------------
 -- | Record to represent error information
@@ -186,6 +184,14 @@ notFoundMsg msg = writeErrorResponse 404 msg
 -- | Return a 404 error response.
 notFound :: MonadSnap m => m ()
 notFound = notFoundMsg "Not found"
+
+
+------------------------------------------------------------------------------
+-- | Return a 404 error as part of a JSON response
+notFoundJson :: MonadSnap m => m ()
+notFoundJson = do
+    modifyResponse $ setResponseCode 404
+    writeErrorJson "Not found"
 
 
 ------------------------------------------------------------------------------
