@@ -43,9 +43,9 @@ initApp = makeSnaplet "snaprest" "REST web services" Nothing $ do
               , ("users/user",         putUserHandler)
               , ("users",              getUsersHandler)
               -- authorization calls
-              , ("login",  with auth $ loginHandler)
-              , ("logout", with auth $ logoutHandler)
-              , ("new",    with auth $ registerHandler)
+              , ("auth/login",  with auth $ loginHandler)
+              , ("auth/logout", with auth $ logoutHandler)
+              , ("auth/new",    with auth $ registerHandler)
               -- various calls
               , ("status",             getStatus)
               , ("ping/:countparam",   pingHandler)
