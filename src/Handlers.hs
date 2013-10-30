@@ -39,16 +39,19 @@ pingHandler = do
 -- | Login handler
 loginHandler :: Handler App (AuthManager App) ()
 loginHandler =
-    jsonPut $ \login -> do
-        let u = T.pack $ user login
-            p = ClearText $ BS.pack $ password login
-        result <- loginByUsername u p rememberToken
-        case result of
-            Right _ -> jsonSimpleSuccess
-            _       -> failed
+    jsonPut process
+  where
+    -- process given login information
+    process login =
+        either invalidLogin success
+            =<< loginByUsername u p rememberToken
       where
-        rememberToken = False
-        failed = writeErrorJson "invalid user and/or password specified"
+        u = T.pack $ user login
+        p = ClearText $ BS.pack $ password login
+
+        rememberToken  = False
+        success _      = jsonSimpleSuccess
+        invalidLogin _ = writeErrorJson "invalid user and/or password specified"
 
 
 ------------------------------------------------------------------------------

@@ -45,6 +45,7 @@ exec db action = do
         Right v      -> return v
         Left failure -> fail $ show failure
   where
+    -- TODO: configurable connection
     connection = "127.0.0.1"
 
 
