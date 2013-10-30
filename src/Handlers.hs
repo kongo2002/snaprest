@@ -62,14 +62,26 @@ logoutHandler =
 -- | Register new user handler
 registerHandler :: Handler App (AuthManager App) ()
 registerHandler =
-    jsonPost $ \login -> do
-        let u = T.pack $ user login
-            p = BS.pack $ password login
-        exists <- usernameExists u
-        if exists then failed else
-            createUser u p >> jsonSimpleSuccess
+    jsonPost process
+  where
+    -- process given login information
+    process login
+        | validU && validP = do
+            exists <- usernameExists u
+            if exists
+                then alreadyExists
+                else createUser u p >> jsonSimpleSuccess
+        | otherwise = invalidLogin
+
       where
-        failed = writeErrorJson "username already exists"
+        u = T.pack $ user login
+        p = BS.pack $ password login
+
+        validU = length (user login) >= 4
+        validP = length (password login) >= 6
+
+    alreadyExists = writeErrorJson "username already exists"
+    invalidLogin  = writeErrorJson "invalid login information specified"
 
 
 ------------------------------------------------------------------------------
