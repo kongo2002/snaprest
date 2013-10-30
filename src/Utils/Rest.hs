@@ -18,6 +18,7 @@ import           Data.Word              ( Word8 )
 import           Database.MongoDB       ( Database, Collection, Query )
 
 import           Snap.Core
+import           Snap.Snaplet
 
 import           Application
 import           Utils.Http
@@ -164,9 +165,21 @@ jsonUpdateId func = method POST $ do
 
 
 ------------------------------------------------------------------------------
--- | Helper function to process a PUT request
-jsonPut :: FromJSON d => (d -> AppHandler ()) -> AppHandler ()
-jsonPut func = method PUT $ do
+-- | Helper function to process a PUT request containing JSON payload
+jsonPut :: FromJSON d => (d -> Handler App a ()) -> Handler App a ()
+jsonPut = method PUT . jsonInput
+
+
+------------------------------------------------------------------------------
+-- | Helper function to process a POST request containing JSON payload
+jsonPost :: FromJSON d => (d -> Handler App a ()) -> Handler App a ()
+jsonPost = method POST . jsonInput
+
+
+------------------------------------------------------------------------------
+-- | Internal helper function to process JSON payload
+jsonInput :: FromJSON d => (d -> Handler App a ()) -> Handler App a ()
+jsonInput func = do
     body <- readRequestBody maximumBodyLength
     getJson body
   where

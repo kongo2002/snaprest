@@ -34,14 +34,20 @@ initApp = makeSnaplet "snaprest" "REST web services" Nothing $ do
     a <- nestSnaplet "auth" auth $
         initJsonFileAuthManager defAuthSettings sess "login.json"
     -- routes
-    addRoutes [ ("", ifTop           root)
-              , ("status",           getStatus)
-              , ("ping/:countparam", pingHandler)
-              , ("users/user/:id",   getUserHandler)
-              , ("users/user/:id",   deleteUserHandler)
-              , ("users/user/:id",   updateUserHandler)
-              , ("users/user",       putUserHandler)
-              , ("users",            getUsersHandler)
+    addRoutes [ ("", ifTop             root)
+              -- user calls
+              , ("users/user/:id",     getUserHandler)
+              , ("users/user/:id",     deleteUserHandler)
+              , ("users/user/:id",     updateUserHandler)
+              , ("users/user",         putUserHandler)
+              , ("users",              getUsersHandler)
+              -- authorization calls
+              , ("login",  with auth $ loginHandler)
+              , ("logout", with auth $ logoutHandler)
+              , ("new",    with auth $ registerHandler)
+              -- various calls
+              , ("status",             getStatus)
+              , ("ping/:countparam",   pingHandler)
               ]
     wrapSite (<|> dir "static" (serveDirectory "."))
     return $ App a s

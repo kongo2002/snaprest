@@ -137,8 +137,16 @@ setToJson = setContentType $ BS.pack "application/json; charset=utf-8"
 
 
 ------------------------------------------------------------------------------
+-- | Return a simple success:true JSON response
+jsonSimpleSuccess :: MonadSnap m => m ()
+jsonSimpleSuccess = do
+    modifyResponse setToJson
+    writeLBS "{\"success\":true}"
+
+
+------------------------------------------------------------------------------
 -- | Return a JSON response wrapped in a '{data:...,success:true}' form.
-jsonResponse :: ToJSON a => a -> AppHandler ()
+jsonResponse :: ToJSON a => MonadSnap m => a -> m ()
 jsonResponse element = do
     modifyResponse setToJson
     let elemJson = encode element
@@ -147,7 +155,7 @@ jsonResponse element = do
 
 ------------------------------------------------------------------------------
 -- | Write an error response with a given code and message.
-writeErrorResponse :: Int -> String -> AppHandler ()
+writeErrorResponse :: MonadSnap m => Int -> String -> m ()
 writeErrorResponse code msg = do
     modifyResponse $ setResponseCode code
     writeBS $ BS.pack msg
@@ -156,7 +164,7 @@ writeErrorResponse code msg = do
 ------------------------------------------------------------------------------
 -- | Write a JSON formatted error response with an optional error code
 -- and message.
-writeErrorJsonCode :: Maybe Int -> String -> AppHandler ()
+writeErrorJsonCode :: MonadSnap m => Maybe Int -> String -> m ()
 writeErrorJsonCode code msg = do
     modifyResponse setToJson
     writeLBS $ encode $ ErrorJson False msg code
@@ -164,29 +172,29 @@ writeErrorJsonCode code msg = do
 
 ------------------------------------------------------------------------------
 -- | Write a JSON formatted error response with a given message.
-writeErrorJson :: String -> AppHandler ()
+writeErrorJson :: MonadSnap m => String -> m ()
 writeErrorJson = writeErrorJsonCode Nothing
 
 
 ------------------------------------------------------------------------------
 -- | Return a 404 error response with a specified message.
-notFoundMsg :: String -> AppHandler ()
+notFoundMsg :: MonadSnap m => String -> m ()
 notFoundMsg msg = writeErrorResponse 404 msg
 
 
 ------------------------------------------------------------------------------
 -- | Return a 404 error response.
-notFound :: AppHandler ()
+notFound :: MonadSnap m => m ()
 notFound = notFoundMsg "Not found"
 
 
 ------------------------------------------------------------------------------
 -- | Return a 500 error response with a specified message.
-invalidMsg :: String -> AppHandler ()
+invalidMsg :: MonadSnap m => String -> m ()
 invalidMsg = writeErrorResponse 500
 
 
 ------------------------------------------------------------------------------
 -- | Return a 500 error response.
-invalidInput :: AppHandler ()
+invalidInput :: MonadSnap m => m ()
 invalidInput = invalidMsg "Invalid input given"

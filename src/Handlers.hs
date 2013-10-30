@@ -2,12 +2,17 @@
 
 module Handlers where
 
-import           Prelude hiding ( id )
+import           Prelude hiding      ( id )
+
 import           Snap.Core
+import           Snap.Snaplet
+import           Snap.Snaplet.Auth
 
 import qualified Data.ByteString.Char8 as BS
+import qualified Data.Text as T
 
 import           Application
+import           Types.Login
 import           Types.Users
 import           Utils.Http
 import           Utils.Rest
@@ -28,6 +33,43 @@ pingHandler :: AppHandler ()
 pingHandler = do
     count <- getIntParamDef "countparam" 10
     writeBS $ BS.pack $ replicate count '*'
+
+
+------------------------------------------------------------------------------
+-- | Login handler
+loginHandler :: Handler App (AuthManager App) ()
+loginHandler =
+    jsonPut $ \login -> do
+        let u = T.pack $ user login
+            p = ClearText $ BS.pack $ password login
+        result <- loginByUsername u p rememberToken
+        case result of
+            Right _ -> jsonSimpleSuccess
+            _       -> failed
+      where
+        rememberToken = False
+        failed = writeErrorJson "failed to log in"
+
+
+------------------------------------------------------------------------------
+-- | User logout handler
+logoutHandler :: Handler App (AuthManager App) ()
+logoutHandler =
+    logout >> jsonSimpleSuccess
+
+
+------------------------------------------------------------------------------
+-- | Register new user handler
+registerHandler :: Handler App (AuthManager App) ()
+registerHandler =
+    jsonPost $ \login -> do
+        let u = T.pack $ user login
+            p = BS.pack $ password login
+        exists <- usernameExists u
+        if exists then failed else
+            createUser u p >> jsonSimpleSuccess
+      where
+        failed = writeErrorJson "username already exists"
 
 
 ------------------------------------------------------------------------------
