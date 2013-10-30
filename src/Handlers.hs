@@ -48,7 +48,7 @@ loginHandler =
             _       -> failed
       where
         rememberToken = False
-        failed = writeErrorJson "failed to log in"
+        failed = writeErrorJson "invalid user and/or password specified"
 
 
 ------------------------------------------------------------------------------
