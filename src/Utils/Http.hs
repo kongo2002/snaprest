@@ -2,7 +2,7 @@
 
 module Utils.Http where
 
-import           Snap.Core
+import           Control.Monad              ( liftM )
 import           Data.Aeson                 ( ToJSON, toJSON, object, (.=)
                                             , encode )
 import           Data.Maybe                 ( fromMaybe, mapMaybe )
@@ -11,6 +11,8 @@ import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as LBS
 
 import           Data.ByteString.Lex.Double ( readDouble )
+
+import           Snap.Core
 
 
 ------------------------------------------------------------------------------
@@ -35,17 +37,15 @@ instance ToJSON ErrorJson where
 ------------------------------------------------------------------------------
 -- | Try to parse an integer from the given bytestring
 readIntMaybe :: BS.ByteString -> Maybe Int
-readIntMaybe bs = do
-    p <- BS.readInt bs
-    return $ fst p
+readIntMaybe bs =
+    fmap fst $ BS.readInt bs
 
 
 ------------------------------------------------------------------------------
 -- | Try to parse a double from the given bytestring
 readDoubleMaybe :: BS.ByteString -> Maybe Double
-readDoubleMaybe bs = do
-    p <- readDouble bs
-    return $ fst p
+readDoubleMaybe bs =
+    fmap fst $ readDouble bs
 
 
 ------------------------------------------------------------------------------
@@ -67,9 +67,8 @@ readFirstDoubleMaybe (x:_) = readDoubleMaybe x
 ------------------------------------------------------------------------------
 -- | Retrieve an integer parameter from the given request.
 rqIntParam :: BS.ByteString -> Request -> Maybe Int
-rqIntParam bs rq = do
-    p <- rqParam bs rq
-    readFirstIntMaybe p
+rqIntParam bs rq =
+    rqParam bs rq >>= readFirstIntMaybe
 
 
 ------------------------------------------------------------------------------
@@ -83,9 +82,8 @@ rqIntParamDef d bs rq =
 ------------------------------------------------------------------------------
 -- | Retrieve a double parameter from the given request.
 rqDoubleParam :: BS.ByteString -> Request -> Maybe Double
-rqDoubleParam bs rq = do
-    p <- rqParam bs rq
-    readFirstDoubleMaybe p
+rqDoubleParam bs rq =
+    rqParam bs rq >>= readFirstDoubleMaybe
 
 
 ------------------------------------------------------------------------------
@@ -99,17 +97,15 @@ rqDoubleParamDef d bs rq =
 ------------------------------------------------------------------------------
 -- | Retrieve a specific integer parameter.
 getIntParam :: MonadSnap m => BS.ByteString -> m (Maybe Int)
-getIntParam bs = do
-    r <- getRequest
-    return $ rqIntParam bs r
+getIntParam bs =
+    liftM (rqIntParam bs) getRequest
 
 
 ------------------------------------------------------------------------------
 -- | Retrieve a specific integer parameter or a default value.
 getIntParamDef :: MonadSnap m => BS.ByteString -> Int -> m (Int)
-getIntParamDef bs d = do
-    r <- getRequest
-    return $ rqIntParamDef d bs r
+getIntParamDef bs d =
+    liftM (rqIntParamDef d bs) getRequest
 
 
 ------------------------------------------------------------------------------
